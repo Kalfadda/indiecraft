@@ -1,11 +1,5 @@
 # Claude Code Instructions
 
-## Credentials
-
-- **Admin Access Password**: `ScytheDevForever123`
-- **Repository Password**: `ScytheOps123!`
-- **GitHub Repo**: https://github.com/Kalfadda/scythe-ops (private)
-
 ## Build & Test Workflow
 
 After every feature change or code modification:
