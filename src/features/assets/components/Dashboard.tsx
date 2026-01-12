@@ -4,6 +4,7 @@ import { useAssets } from "../hooks/useAssets";
 import { useAssetRealtime } from "../hooks/useAssetRealtime";
 import { AssetList } from "./AssetList";
 import { AssetForm } from "./AssetForm";
+import { UpdateNotification } from "@/components/UpdateNotification";
 import { Box, LogOut, Settings, Clock, CheckCircle2, Wifi, Tag, X } from "lucide-react";
 import { ASSET_CATEGORIES, type AssetCategory } from "@/types/database";
 
@@ -36,6 +37,9 @@ export function Dashboard() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f4f4f7', color: '#1e1e2e' }}>
+      {/* Update Notification */}
+      <UpdateNotification />
+
       {/* Header */}
       <header style={{
         position: 'sticky',

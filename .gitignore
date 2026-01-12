@@ -35,3 +35,7 @@ npm-debug.log*
 tmp/
 tmpclaude-*
 nul
+
+# Signing keys (keep secret!)
+.tauri-updater-key
+*.tauri-updater-key
