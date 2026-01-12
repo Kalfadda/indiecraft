@@ -4,7 +4,7 @@
 
 After every feature change or code modification:
 1. Run `npm run tauri build` or `build.bat` to build the application
-2. Launch the built executable from `src-tauri\target\release\app.exe` to verify the changes work
+2. Launch the built executable from `src-tauri\target\release\scytheops.exe` to verify the changes work
 
 ## Project Structure
 
