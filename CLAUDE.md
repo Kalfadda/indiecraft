@@ -70,6 +70,16 @@ Users will automatically receive the update next time they launch the app.
 - Private key: `src-tauri/.tauri-updater-key` (KEEP SECRET, do not commit!)
 - Public key: embedded in `tauri.conf.json`
 
+## Database Migrations
+
+**IMPORTANT:** Whenever you modify `src/types/database.ts` (adding columns, changing types, adding enum values), you MUST:
+
+1. Generate the corresponding SQL migration
+2. Prompt the user to run it in Supabase SQL Editor
+3. Provide clear step-by-step instructions
+
+The app will fail to load data if the TypeScript types don't match the actual database schema.
+
 ## Common Patterns
 
 - Auth state flows through Zustand store, accessed via `useAuth()` hook
