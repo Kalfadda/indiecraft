@@ -5,18 +5,26 @@ import { useAssetRealtime } from "../hooks/useAssetRealtime";
 import { AssetList } from "./AssetList";
 import { AssetForm } from "./AssetForm";
 import { UpdateNotification } from "@/components/UpdateNotification";
-import { Box, LogOut, Settings, Clock, CheckCircle2, Wifi, Tag, X, ListTodo, Boxes, CircleCheck, Archive, Info, CalendarDays } from "lucide-react";
+import { Compare } from "@/features/tools";
+import { ScheduleView } from "@/features/schedule";
+import { Box, LogOut, Settings, Clock, CheckCircle2, Wifi, Tag, X, ListTodo, Boxes, CircleCheck, Archive, Info, CalendarDays, Wrench, ChevronDown, GitCompare } from "lucide-react";
 import { ASSET_CATEGORIES, type AssetCategory, type AssetStatus } from "@/types/database";
 
-type MainView = "tasks" | "schedule" | "modeling";
+type MainView = "tasks" | "schedule" | "modeling" | "compare";
+type ToolItem = { id: MainView; label: string; icon: React.ReactNode };
 
 export function Dashboard() {
   const { profile, signOut } = useAuth();
   const [mainView, setMainView] = useState<MainView>("tasks");
   const [activeTab, setActiveTab] = useState<AssetStatus>("pending");
   const [selectedCategory, setSelectedCategory] = useState<AssetCategory | null>(null);
+  const [toolsExpanded, setToolsExpanded] = useState(false);
 
   useAssetRealtime();
+
+  const toolItems: ToolItem[] = [
+    { id: "compare", label: "Compare", icon: <GitCompare style={{ width: 18, height: 18 }} /> },
+  ];
 
   const { data: pendingAssets } = useAssets({ status: "pending", category: selectedCategory });
   const { data: completedAssets } = useAssets({ status: "completed", category: selectedCategory });
@@ -117,6 +125,75 @@ export function Dashboard() {
               {item.label}
             </button>
           ))}
+
+          {/* Tools Dropdown */}
+          <div style={{ marginTop: 8 }}>
+            <button
+              onClick={() => setToolsExpanded(!toolsExpanded)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                borderRadius: 8,
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: 500,
+                backgroundColor: toolItems.some(t => mainView === t.id) ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
+                color: toolItems.some(t => mainView === t.id) ? '#22d3ee' : '#9ca3af',
+                textAlign: 'left',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Wrench style={{ width: 20, height: 20 }} />
+                Tools
+              </div>
+              <ChevronDown
+                style={{
+                  width: 16,
+                  height: 16,
+                  transition: 'transform 0.2s ease',
+                  transform: toolsExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
+                }}
+              />
+            </button>
+
+            {/* Tool Items */}
+            <div style={{
+              overflow: 'hidden',
+              maxHeight: toolsExpanded ? '200px' : '0px',
+              transition: 'max-height 0.2s ease',
+            }}>
+              {toolItems.map((tool) => (
+                <button
+                  key={tool.id}
+                  onClick={() => setMainView(tool.id)}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '10px 16px 10px 44px',
+                    borderRadius: 6,
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    backgroundColor: mainView === tool.id ? 'rgba(6, 182, 212, 0.2)' : 'transparent',
+                    color: mainView === tool.id ? '#22d3ee' : '#6b7280',
+                    textAlign: 'left',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {tool.icon}
+                  {tool.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </nav>
 
         {/* Bottom section */}
@@ -368,27 +445,8 @@ export function Dashboard() {
         )}
 
         {mainView === "schedule" && (
-          <main style={{ maxWidth: 1152, margin: '0 auto', padding: '32px 24px' }}>
-            {/* Schedule Stub */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 400,
-              backgroundColor: '#fff',
-              borderRadius: 12,
-              border: '2px dashed #e5e5eb',
-              padding: 48
-            }}>
-              <CalendarDays style={{ width: 64, height: 64, color: '#d1d5db', marginBottom: 24 }} />
-              <h2 style={{ fontSize: 24, fontWeight: 600, color: '#1e1e2e', marginBottom: 8 }}>
-                Schedule
-              </h2>
-              <p style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', maxWidth: 400 }}>
-                Coming soon. Plan and organize your tasks with calendar-based scheduling.
-              </p>
-            </div>
+          <main style={{ maxWidth: 1400, margin: '0 auto', padding: '32px 24px' }}>
+            <ScheduleView />
           </main>
         )}
 
@@ -414,6 +472,21 @@ export function Dashboard() {
                 This feature is coming soon. Stay tuned for updates on our modeling capabilities.
               </p>
             </div>
+          </main>
+        )}
+
+        {mainView === "compare" && (
+          <main style={{ maxWidth: 1152, margin: '0 auto', padding: '32px 24px' }}>
+            {/* Header */}
+            <div style={{ marginBottom: 24 }}>
+              <h2 style={{ fontSize: 24, fontWeight: 600, color: '#1e1e2e', marginBottom: 4 }}>
+                Compare Categories
+              </h2>
+              <p style={{ fontSize: 14, color: '#6b7280' }}>
+                Side-by-side comparison of task categories
+              </p>
+            </div>
+            <Compare />
           </main>
         )}
       </div>

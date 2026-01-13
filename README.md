@@ -97,6 +97,21 @@ Click the **X** on any task card.
 
 ## Changelog
 
+### v0.1.7
+- Added edit functionality to task details modal
+- Fixed long descriptions causing horizontal overflow in schedule events
+- Fixed auto-create task checkbox now properly creates tasks from deliverables
+
+### v0.1.6
+- Added Tools dropdown in sidebar with Compare tool
+- Compare tool allows side-by-side comparison of task categories
+- Added full Schedule feature with calendar and event management
+- Three event types: Milestones (with countdown), Deliverables (linked to tasks), Labels (historic markers)
+- Calendar view with month navigation and event indicators
+- List view for chronological event browsing
+- Event filtering by type
+- Auto-create task option for deliverable events
+
 ### v0.1.5
 - Added Schedule tab (coming soon)
 - Improved "Add New Task" form layout - more spacious design

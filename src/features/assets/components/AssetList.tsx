@@ -14,7 +14,7 @@ interface AssetListProps {
 
 export function AssetList({ status, category }: AssetListProps) {
   const { data: assets, isLoading, error } = useAssets({ status, category });
-  const { markAsCompleted, markAsImplemented, moveToPending, moveToCompleted, deleteAsset } = useAssetMutations();
+  const { markAsCompleted, markAsImplemented, moveToPending, moveToCompleted, deleteAsset, updateAsset } = useAssetMutations();
   const [selectedAsset, setSelectedAsset] = useState<AssetWithCreator | null>(null);
 
   if (isLoading) {
@@ -116,7 +116,18 @@ export function AssetList({ status, category }: AssetListProps) {
     });
   };
 
-  const isLoading_ = markAsCompleted.isPending || markAsImplemented.isPending || moveToPending.isPending || moveToCompleted.isPending;
+  const handleUpdate = (id: string, data: { name: string; blurb: string; category: any; priority: any }) => {
+    updateAsset.mutate({ id, ...data }, {
+      onSuccess: (updatedAsset) => {
+        // Update the selected asset with new data to reflect changes immediately
+        if (selectedAsset && selectedAsset.id === id) {
+          setSelectedAsset({ ...selectedAsset, ...updatedAsset });
+        }
+      }
+    });
+  };
+
+  const isLoading_ = markAsCompleted.isPending || markAsImplemented.isPending || moveToPending.isPending || moveToCompleted.isPending || updateAsset.isPending;
 
   return (
     <>
@@ -148,6 +159,7 @@ export function AssetList({ status, category }: AssetListProps) {
         onMarkImplemented={status === "completed" ? handleMarkImplemented : undefined}
         onMoveToPending={(status === "completed" || status === "implemented") ? handleMoveToPending : undefined}
         onMoveToCompleted={status === "implemented" ? handleMoveToCompleted : undefined}
+        onUpdate={handleUpdate}
         isTransitioning={isLoading_}
       />
     </>

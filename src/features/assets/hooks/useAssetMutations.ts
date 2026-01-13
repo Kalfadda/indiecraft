@@ -61,6 +61,8 @@ export function useAssetMutations() {
       name?: string;
       blurb?: string;
       status?: AssetStatus;
+      category?: AssetCategory | null;
+      priority?: AssetPriority | null;
     }) => {
       const { data: asset, error } = await supabase
         .from("assets")

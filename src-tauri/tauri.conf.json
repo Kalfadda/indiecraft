@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Scythe Ops",
-  "version": "0.1.1",
+  "version": "0.1.7",
   "identifier": "com.scythe.assettracker",
   "build": {
     "frontendDist": "../dist",
@@ -36,7 +36,18 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "createUpdaterArtifacts": false
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDdBNTIzREFFOTZBNzQxQzkKUldUSlFhZVdyajFTZWpVTXgvOWUwQzg2QS9KSmlmay9UdXdEWUVLVE9hYkVqTXpWMWd5eDVaNUgK",
+      "endpoints": [
+        "https://github.com/Kalfadda/scythe-ops/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   },
   "mainBinaryName": "scytheops"
 }
