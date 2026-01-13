@@ -91,4 +91,29 @@ User management panel for team leads. Blocking a user automatically releases all
 
 Built with Tauri + React + TypeScript + Supabase.
 
+### Prerequisites
+- Node.js 18+
+- Rust (via [rustup](https://rustup.rs/))
+- Tauri CLI: `cargo install tauri-cli`
+
+### Setup
+```bash
+git clone https://github.com/Kalfadda/scythe-ops.git
+cd scythe-ops
+npm install
+```
+
+### Development
+```bash
+npm run tauri dev
+```
+
+### Build
+```bash
+npm run release          # Auto-bump version + build
+npm run tauri build      # Build without version bump
+```
+
+Output: `src-tauri/target/release/scytheops.exe`
+
 See `CLAUDE.md` for technical details.
