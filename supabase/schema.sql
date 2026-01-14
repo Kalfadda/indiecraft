@@ -169,6 +169,129 @@ CREATE POLICY "Non-blocked users can delete assets"
   USING (NOT public.is_user_blocked());
 
 -- ============================================
+-- EVENTS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  type TEXT NOT NULL CHECK (type IN ('milestone', 'deliverable', 'label')),
+  title TEXT NOT NULL,
+  description TEXT,
+  event_date DATE NOT NULL,
+  event_time TIME,
+  visibility TEXT CHECK (visibility IN ('internal', 'external')),
+  linked_asset_id UUID REFERENCES public.assets(id) ON DELETE SET NULL,
+  auto_create_task BOOLEAN NOT NULL DEFAULT FALSE,
+  created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_events_event_date ON public.events(event_date);
+CREATE INDEX IF NOT EXISTS idx_events_type ON public.events(type);
+
+-- Apply trigger to events
+DROP TRIGGER IF EXISTS update_events_updated_at ON public.events;
+CREATE TRIGGER update_events_updated_at
+  BEFORE UPDATE ON public.events
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================
+-- MODEL_REQUESTS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.model_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  description TEXT,
+  priority TEXT CHECK (priority IN ('low', 'medium', 'high', 'critical')),
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'accepted', 'denied')),
+  created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  accepted_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  accepted_at TIMESTAMP WITH TIME ZONE,
+  linked_asset_id UUID REFERENCES public.assets(id) ON DELETE SET NULL,
+  denied_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  denied_at TIMESTAMP WITH TIME ZONE,
+  denial_reason TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_model_requests_status ON public.model_requests(status);
+
+-- Apply trigger to model_requests
+DROP TRIGGER IF EXISTS update_model_requests_updated_at ON public.model_requests;
+CREATE TRIGGER update_model_requests_updated_at
+  BEFORE UPDATE ON public.model_requests
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================
+-- ENABLE RLS ON EVENTS
+-- ============================================
+ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Non-blocked users can view events" ON public.events;
+CREATE POLICY "Non-blocked users can view events"
+  ON public.events
+  FOR SELECT
+  TO authenticated
+  USING (NOT public.is_user_blocked());
+
+DROP POLICY IF EXISTS "Non-blocked users can create events" ON public.events;
+CREATE POLICY "Non-blocked users can create events"
+  ON public.events
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (NOT public.is_user_blocked());
+
+DROP POLICY IF EXISTS "Non-blocked users can update events" ON public.events;
+CREATE POLICY "Non-blocked users can update events"
+  ON public.events
+  FOR UPDATE
+  TO authenticated
+  USING (NOT public.is_user_blocked());
+
+DROP POLICY IF EXISTS "Non-blocked users can delete events" ON public.events;
+CREATE POLICY "Non-blocked users can delete events"
+  ON public.events
+  FOR DELETE
+  TO authenticated
+  USING (NOT public.is_user_blocked());
+
+-- ============================================
+-- ENABLE RLS ON MODEL_REQUESTS
+-- ============================================
+ALTER TABLE public.model_requests ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Non-blocked users can view model_requests" ON public.model_requests;
+CREATE POLICY "Non-blocked users can view model_requests"
+  ON public.model_requests
+  FOR SELECT
+  TO authenticated
+  USING (NOT public.is_user_blocked());
+
+DROP POLICY IF EXISTS "Non-blocked users can create model_requests" ON public.model_requests;
+CREATE POLICY "Non-blocked users can create model_requests"
+  ON public.model_requests
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (NOT public.is_user_blocked());
+
+DROP POLICY IF EXISTS "Non-blocked users can update model_requests" ON public.model_requests;
+CREATE POLICY "Non-blocked users can update model_requests"
+  ON public.model_requests
+  FOR UPDATE
+  TO authenticated
+  USING (NOT public.is_user_blocked());
+
+DROP POLICY IF EXISTS "Non-blocked users can delete model_requests" ON public.model_requests;
+CREATE POLICY "Non-blocked users can delete model_requests"
+  ON public.model_requests
+  FOR DELETE
+  TO authenticated
+  USING (NOT public.is_user_blocked());
+
+-- ============================================
 -- ENABLE REALTIME FOR ASSETS
 -- ============================================
 -- Run this to enable realtime subscriptions on the assets table

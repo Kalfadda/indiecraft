@@ -109,6 +109,26 @@ In Supabase Dashboard:
 
 The app will fail if TypeScript types don't match the database schema.
 
+## Security - Row Level Security (RLS)
+
+**CRITICAL:** This repo is public. The Supabase URL and anon key are bundled into the app and visible to anyone.
+
+**Every new table MUST have RLS enabled with proper policies:**
+
+1. Enable RLS: `ALTER TABLE public.table_name ENABLE ROW LEVEL SECURITY;`
+2. Add policies for SELECT, INSERT, UPDATE, DELETE
+3. All policies should require `authenticated` role
+4. Use `NOT public.is_user_blocked()` check in policies
+
+Example policy pattern:
+```sql
+CREATE POLICY "Non-blocked users can view table_name"
+  ON public.table_name FOR SELECT TO authenticated
+  USING (NOT public.is_user_blocked());
+```
+
+**Without RLS, anyone who signs up can access all data in that table.**
+
 ## Auto-Updates
 
 The app checks for updates on launch and forces users to update (blocking modal) to ensure version concurrency.
