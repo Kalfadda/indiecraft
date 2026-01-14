@@ -4,6 +4,18 @@ All notable changes to Scythe Ops will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.24] - 2026-01-13
+
+### Added
+- Forced auto-update system - users must update to ensure version concurrency
+- Full-screen blocking modal during updates with progress bar
+- Clickable version number in sidebar to manually check for updates
+- Version display in sidebar footer
+
+### Changed
+- Auto-update now shows download progress and auto-restarts
+- Regenerated signing keys for update verification
+
 ## [0.1.5] - 2026-01-12
 
 ### Added

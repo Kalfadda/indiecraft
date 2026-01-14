@@ -2,12 +2,15 @@
 
 ## Build & Test Workflow
 
-After every feature change or code modification:
-1. Run `npm run release` to auto-bump version and build
-2. Launch the built executable from `src-tauri\target\release\scytheops.exe` to verify the changes work
+After every feature change or code modification, run the signed build script:
 
-**Note:** `npm run release` automatically increments the patch version (e.g., 0.1.0 → 0.1.1) before building.
-For manual builds without version bump, use `npm run tauri build`.
+```cmd
+build-signed.bat
+```
+
+Then launch `src-tauri\target\release\scytheops.exe` to verify the changes work.
+
+**Note:** The script automatically increments the patch version (e.g., 0.1.0 → 0.1.1) and signs the build.
 
 ## Project Structure
 
@@ -108,21 +111,19 @@ The app will fail if TypeScript types don't match the database schema.
 
 ## Auto-Updates
 
-The app checks for updates on launch using GitHub Releases.
+The app checks for updates on launch and forces users to update (blocking modal) to ensure version concurrency.
 
-### Creating a Release
+### Publishing a Release
 
-1. Set signing key: `set TAURI_SIGNING_PRIVATE_KEY=<contents of src-tauri/.tauri-updater-key>`
-2. Build: `npm run release`
-3. Create GitHub Release with version tag (e.g., `v0.1.11`)
-4. Upload from `src-tauri/target/release/bundle/`:
-   - `nsis/Scythe Ops_x.x.x_x64-setup.exe` + `.sig`
-   - `msi/Scythe Ops_x.x.x_x64_en-US.msi` + `.sig`
-   - `latest.json`
+After running the signed build (see Build & Test Workflow above), create a GitHub Release (tag `vX.X.X`) and upload from `src-tauri/target/release/bundle/`:
+- `nsis/Scythe Ops_x.x.x_x64-setup.exe` + `.sig`
+- `msi/Scythe Ops_x.x.x_x64_en-US.msi` + `.sig`
+- `latest.json`
 
-### Signing Key Location
+### Signing Key
 - Private: `src-tauri/.tauri-updater-key` (SECRET - do not commit!)
 - Public: embedded in `tauri.conf.json`
+- Password: `scythe`
 
 ## Common Patterns
 

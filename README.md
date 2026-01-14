@@ -12,6 +12,8 @@ Dev team management tool. Track tasks, schedule milestones, and coordinate who's
 2. Sign in with your team email
 3. Start tracking!
 
+**Auto-Updates**: The app checks for updates on launch. When an update is available, it downloads automatically and restarts. You can also click the version number in the sidebar to manually check.
+
 ---
 
 ## Features

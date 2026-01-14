@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getVersion } from "@tauri-apps/api/app";
+import { check } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 import { useAuth } from "@/features/auth";
 import { useAssets } from "../hooks/useAssets";
 import { useAssetRealtime } from "../hooks/useAssetRealtime";
@@ -7,15 +10,55 @@ import { AssetForm } from "./AssetForm";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import { Compare } from "@/features/tools";
 import { ScheduleView } from "@/features/schedule";
-import { Box, LogOut, Settings, Clock, CheckCircle2, Wifi, Tag, X, ListTodo, Boxes, CircleCheck, Archive, Info, CalendarDays, Wrench, ChevronDown, GitCompare } from "lucide-react";
+import { ModelingView } from "@/features/modeling";
+import { VersionControlView } from "@/features/versioncontrol";
+import { Box, LogOut, Settings, Clock, CheckCircle2, Wifi, Tag, X, ListTodo, Boxes, CircleCheck, Archive, Info, CalendarDays, Wrench, ChevronDown, GitCompare, GitBranch } from "lucide-react";
 import { ASSET_CATEGORIES, type AssetCategory, type AssetStatus } from "@/types/database";
 
-type MainView = "tasks" | "schedule" | "modeling" | "compare";
+type MainView = "tasks" | "schedule" | "modeling" | "versioncontrol" | "compare";
 type ToolItem = { id: MainView; label: string; icon: React.ReactNode };
 
 export function Dashboard() {
   const { profile, signOut } = useAuth();
   const [mainView, setMainView] = useState<MainView>("tasks");
+  const [appVersion, setAppVersion] = useState<string>("");
+  const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "available" | "latest" | "error">("idle");
+  const [newVersion, setNewVersion] = useState<string>("");
+
+  useEffect(() => {
+    getVersion().then(setAppVersion);
+  }, []);
+
+  async function handleVersionClick() {
+    if (updateStatus === "checking") return;
+
+    setUpdateStatus("checking");
+    try {
+      const update = await check();
+      if (update) {
+        setNewVersion(update.version);
+        setUpdateStatus("available");
+      } else {
+        setUpdateStatus("latest");
+        setTimeout(() => setUpdateStatus("idle"), 3000);
+      }
+    } catch {
+      setUpdateStatus("error");
+      setTimeout(() => setUpdateStatus("idle"), 3000);
+    }
+  }
+
+  async function handleUpdate() {
+    try {
+      const update = await check();
+      if (update) {
+        await update.downloadAndInstall();
+        await relaunch();
+      }
+    } catch {
+      setUpdateStatus("error");
+    }
+  }
   const [activeTab, setActiveTab] = useState<AssetStatus>("pending");
   const [selectedCategory, setSelectedCategory] = useState<AssetCategory | null>(null);
   const [toolsExpanded, setToolsExpanded] = useState(false);
@@ -55,6 +98,7 @@ export function Dashboard() {
     { id: "tasks", label: "Tasks", icon: <ListTodo style={{ width: 20, height: 20 }} /> },
     { id: "schedule", label: "Schedule", icon: <CalendarDays style={{ width: 20, height: 20 }} /> },
     { id: "modeling", label: "Modeling", icon: <Boxes style={{ width: 20, height: 20 }} /> },
+    { id: "versioncontrol", label: "Version Control", icon: <GitBranch style={{ width: 20, height: 20 }} /> },
   ];
 
   return (
@@ -267,6 +311,34 @@ export function Dashboard() {
               <LogOut style={{ width: 18, height: 18 }} />
             </button>
           </div>
+          {appVersion && (
+            <button
+              onClick={updateStatus === "available" ? handleUpdate : handleVersionClick}
+              title="Check for updates"
+              style={{
+                marginTop: 12,
+                fontSize: 11,
+                color: updateStatus === "available" ? "#22c55e" :
+                       updateStatus === "latest" ? "#22c55e" :
+                       updateStatus === "error" ? "#ef4444" :
+                       updateStatus === "checking" ? "#a78bfa" : "#6b7280",
+                textAlign: 'center',
+                background: 'none',
+                border: 'none',
+                cursor: updateStatus === "checking" ? "wait" : "pointer",
+                padding: '4px 8px',
+                borderRadius: 4,
+                width: '100%',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              {updateStatus === "checking" && "Checking..."}
+              {updateStatus === "available" && `Update to v${newVersion}`}
+              {updateStatus === "latest" && "Up to date ✓"}
+              {updateStatus === "error" && "Check failed"}
+              {updateStatus === "idle" && `v${appVersion}`}
+            </button>
+          )}
         </div>
       </aside>
 
@@ -452,26 +524,13 @@ export function Dashboard() {
 
         {mainView === "modeling" && (
           <main style={{ maxWidth: 1152, margin: '0 auto', padding: '32px 24px' }}>
-            {/* Modeling Stub */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 400,
-              backgroundColor: '#fff',
-              borderRadius: 12,
-              border: '2px dashed #e5e5eb',
-              padding: 48
-            }}>
-              <Boxes style={{ width: 64, height: 64, color: '#d1d5db', marginBottom: 24 }} />
-              <h2 style={{ fontSize: 24, fontWeight: 600, color: '#1e1e2e', marginBottom: 8 }}>
-                Modeling
-              </h2>
-              <p style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', maxWidth: 400 }}>
-                This feature is coming soon. Stay tuned for updates on our modeling capabilities.
-              </p>
-            </div>
+            <ModelingView />
+          </main>
+        )}
+
+        {mainView === "versioncontrol" && (
+          <main style={{ maxWidth: 1152, margin: '0 auto', padding: '32px 24px' }}>
+            <VersionControlView />
           </main>
         )}
 

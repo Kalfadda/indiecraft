@@ -7,6 +7,7 @@ export type UpdateStatus = "idle" | "checking" | "available" | "downloading" | "
 export function useUpdater() {
   const [status, setStatus] = useState<UpdateStatus>("idle");
   const [progress, setProgress] = useState(0);
+  const [version, setVersion] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function checkForUpdates() {
@@ -18,9 +19,10 @@ export function useUpdater() {
 
       if (update) {
         console.log(`Update available: ${update.version}`);
+        setVersion(update.version);
         setStatus("available");
 
-        // Start downloading
+        // Start downloading immediately
         setStatus("downloading");
 
         let downloaded = 0;
@@ -46,10 +48,10 @@ export function useUpdater() {
 
         setStatus("ready");
 
-        // Relaunch after a short delay
+        // Relaunch after a short delay to show the ready state
         setTimeout(async () => {
           await relaunch();
-        }, 1000);
+        }, 1500);
       } else {
         console.log("No updates available");
         setStatus("idle");
@@ -74,6 +76,7 @@ export function useUpdater() {
   return {
     status,
     progress,
+    version,
     error,
     checkForUpdates,
   };
