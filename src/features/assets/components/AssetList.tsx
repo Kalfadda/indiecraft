@@ -14,7 +14,7 @@ interface AssetListProps {
 
 export function AssetList({ status, category }: AssetListProps) {
   const { data: assets, isLoading, error } = useAssets({ status, category });
-  const { markAsCompleted, markAsImplemented, moveToPending, moveToCompleted, deleteAsset, updateAsset, claimAsset, unclaimAsset } = useAssetMutations();
+  const { markAsInProgress, markAsCompleted, markAsImplemented, moveToPending, moveToInProgress, moveToCompleted, deleteAsset, updateAsset, claimAsset, unclaimAsset, checkLinkedEvent } = useAssetMutations();
   const [selectedAsset, setSelectedAsset] = useState<AssetWithCreator | null>(null);
 
   if (isLoading) {
@@ -82,6 +82,8 @@ export function AssetList({ status, category }: AssetListProps) {
         <p style={{ fontSize: 14, color: '#6b7280', maxWidth: 320, margin: 0 }}>
           {status === "pending"
             ? "No pending tasks. Create a new task to get started!"
+            : status === "in_progress"
+            ? "No tasks in progress. Start working on a task to see it here!"
             : status === "completed"
             ? "No completed tasks. Mark tasks as complete when work is done!"
             : status === "implemented"
@@ -91,6 +93,12 @@ export function AssetList({ status, category }: AssetListProps) {
       </motion.div>
     );
   }
+
+  const handleMarkInProgress = (id: string) => {
+    markAsInProgress.mutate(id, {
+      onSuccess: () => setSelectedAsset(null)
+    });
+  };
 
   const handleMarkCompleted = (id: string) => {
     markAsCompleted.mutate(id, {
@@ -110,13 +118,19 @@ export function AssetList({ status, category }: AssetListProps) {
     });
   };
 
+  const handleMoveToInProgress = (id: string) => {
+    moveToInProgress.mutate(id, {
+      onSuccess: () => setSelectedAsset(null)
+    });
+  };
+
   const handleMoveToCompleted = (id: string) => {
     moveToCompleted.mutate(id, {
       onSuccess: () => setSelectedAsset(null)
     });
   };
 
-  const handleUpdate = (id: string, data: { name: string; blurb: string; category: any; priority: any }) => {
+  const handleUpdate = (id: string, data: { name: string; blurb: string; category: any; priority: any; eta_date: string | null }) => {
     updateAsset.mutate({ id, ...data }, {
       onSuccess: (updatedAsset) => {
         // Update the selected asset with new data to reflect changes immediately
@@ -148,7 +162,28 @@ export function AssetList({ status, category }: AssetListProps) {
     });
   };
 
-  const isLoading_ = markAsCompleted.isPending || markAsImplemented.isPending || moveToPending.isPending || moveToCompleted.isPending || updateAsset.isPending || claimAsset.isPending || unclaimAsset.isPending;
+  const handleDelete = async (id: string) => {
+    // Check if asset has a linked event
+    const linkedEvent = await checkLinkedEvent(id);
+
+    if (linkedEvent) {
+      const confirmDelete = confirm(
+        `⚠️ This task has a linked ${linkedEvent.type} "${linkedEvent.title}" on the schedule.\n\n` +
+        `Deleting this task will also delete the linked event.\n\n` +
+        `Are you sure you want to delete both?`
+      );
+
+      if (confirmDelete) {
+        deleteAsset.mutate(id);
+      }
+    } else {
+      if (confirm("Are you sure you want to delete this task?")) {
+        deleteAsset.mutate(id);
+      }
+    }
+  };
+
+  const isLoading_ = markAsInProgress.isPending || markAsCompleted.isPending || markAsImplemented.isPending || moveToPending.isPending || moveToInProgress.isPending || moveToCompleted.isPending || updateAsset.isPending || claimAsset.isPending || unclaimAsset.isPending;
 
   return (
     <>
@@ -164,7 +199,7 @@ export function AssetList({ status, category }: AssetListProps) {
               asset={asset}
               index={index}
               onClick={() => setSelectedAsset(asset)}
-              onDelete={(id) => deleteAsset.mutate(id)}
+              onDelete={handleDelete}
               isDeleting={deleteAsset.isPending}
             />
           ))}
@@ -176,9 +211,11 @@ export function AssetList({ status, category }: AssetListProps) {
         asset={selectedAsset}
         isOpen={!!selectedAsset}
         onClose={() => setSelectedAsset(null)}
-        onMarkCompleted={status === "pending" ? handleMarkCompleted : undefined}
+        onMarkInProgress={status === "pending" ? handleMarkInProgress : undefined}
+        onMarkCompleted={status === "in_progress" ? handleMarkCompleted : undefined}
         onMarkImplemented={status === "completed" ? handleMarkImplemented : undefined}
-        onMoveToPending={(status === "completed" || status === "implemented") ? handleMoveToPending : undefined}
+        onMoveToPending={(status === "in_progress" || status === "completed" || status === "implemented") ? handleMoveToPending : undefined}
+        onMoveToInProgress={status === "completed" ? handleMoveToInProgress : undefined}
         onMoveToCompleted={status === "implemented" ? handleMoveToCompleted : undefined}
         onUpdate={handleUpdate}
         onClaim={handleClaim}

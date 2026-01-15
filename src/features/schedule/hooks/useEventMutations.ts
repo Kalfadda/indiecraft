@@ -178,6 +178,25 @@ export function useEventMutations() {
     },
   });
 
+  // Check if event has a linked task (for warning dialog)
+  const checkLinkedTask = async (eventId: string) => {
+    const { data: event } = await supabase
+      .from("events")
+      .select("linked_asset_id")
+      .eq("id", eventId)
+      .single();
+
+    if (event?.linked_asset_id) {
+      const { data: asset } = await supabase
+        .from("assets")
+        .select("id, name")
+        .eq("id", event.linked_asset_id)
+        .single();
+      return asset;
+    }
+    return null;
+  };
+
   const deleteEvent = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("events").delete().eq("id", id);
@@ -186,6 +205,51 @@ export function useEventMutations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
+    },
+  });
+
+  // Delete event and its linked task together
+  const deleteEventWithLinkedTask = useMutation({
+    mutationFn: async (eventId: string) => {
+      // First get the linked asset id
+      const { data: event } = await supabase
+        .from("events")
+        .select("linked_asset_id")
+        .eq("id", eventId)
+        .single();
+
+      // Delete the event
+      const { error: eventError } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", eventId);
+
+      if (eventError) throw eventError;
+
+      // Delete the linked task if it exists
+      if (event?.linked_asset_id) {
+        // First clear any other linked references
+        await supabase
+          .from("model_requests")
+          .update({ linked_asset_id: null })
+          .eq("linked_asset_id", event.linked_asset_id);
+
+        await supabase
+          .from("feature_requests")
+          .update({ linked_asset_id: null })
+          .eq("linked_asset_id", event.linked_asset_id);
+
+        const { error: assetError } = await supabase
+          .from("assets")
+          .delete()
+          .eq("id", event.linked_asset_id);
+
+        if (assetError) throw assetError;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
     },
   });
 
@@ -246,6 +310,8 @@ export function useEventMutations() {
     createEvent,
     updateEvent,
     deleteEvent,
+    deleteEventWithLinkedTask,
     createTaskFromDeliverable,
+    checkLinkedTask,
   };
 }

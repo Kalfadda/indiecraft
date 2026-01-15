@@ -12,8 +12,8 @@ export type AssetCategory =
 // Priority levels
 export type AssetPriority = "low" | "medium" | "high" | "critical";
 
-// Asset status workflow: pending -> completed -> implemented
-export type AssetStatus = "pending" | "completed" | "implemented";
+// Asset status workflow: pending -> in_progress -> completed -> implemented
+export type AssetStatus = "pending" | "in_progress" | "completed" | "implemented";
 
 // Category metadata for UI
 export const ASSET_CATEGORIES: Record<AssetCategory, { label: string; color: string }> = {
@@ -110,12 +110,15 @@ export type Database = {
           category: AssetCategory | null;
           priority: AssetPriority | null;
           created_by: string | null;
+          in_progress_by: string | null;
+          in_progress_at: string | null;
           completed_by: string | null;
           completed_at: string | null;
           implemented_by: string | null;
           implemented_at: string | null;
           claimed_by: string | null;
           claimed_at: string | null;
+          eta_date: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -127,12 +130,15 @@ export type Database = {
           category?: AssetCategory | null;
           priority?: AssetPriority | null;
           created_by?: string | null;
+          in_progress_by?: string | null;
+          in_progress_at?: string | null;
           completed_by?: string | null;
           completed_at?: string | null;
           implemented_by?: string | null;
           implemented_at?: string | null;
           claimed_by?: string | null;
           claimed_at?: string | null;
+          eta_date?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -144,12 +150,15 @@ export type Database = {
           category?: AssetCategory | null;
           priority?: AssetPriority | null;
           created_by?: string | null;
+          in_progress_by?: string | null;
+          in_progress_at?: string | null;
           completed_by?: string | null;
           completed_at?: string | null;
           implemented_by?: string | null;
           implemented_at?: string | null;
           claimed_by?: string | null;
           claimed_at?: string | null;
+          eta_date?: string | null;
           created_at?: string;
           updated_at?: string;
         };

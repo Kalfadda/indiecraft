@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAssetMutations } from "../hooks/useAssetMutations";
-import { Plus, Loader2, X, Check, Tag, Flag, ChevronDown } from "lucide-react";
+import { Plus, Loader2, X, Check, Tag, Flag, ChevronDown, CalendarDays } from "lucide-react";
 import { ASSET_CATEGORIES, ASSET_PRIORITIES, type AssetCategory, type AssetPriority } from "@/types/database";
 
 interface AssetFormProps {
@@ -15,6 +15,7 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
   const [blurb, setBlurb] = useState("");
   const [category, setCategory] = useState<AssetCategory | "">("");
   const [priority, setPriority] = useState<AssetPriority | "">("");
+  const [etaDate, setEtaDate] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
@@ -29,11 +30,13 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
         blurb,
         category: category || null,
         priority: priority || null,
+        eta_date: etaDate || null,
       });
       setName("");
       setBlurb("");
       setCategory("");
       setPriority("");
+      setEtaDate("");
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
@@ -52,6 +55,7 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
     setBlurb("");
     setCategory("");
     setPriority("");
+    setEtaDate("");
     setIsOpen(false);
   }
 
@@ -241,7 +245,7 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                         />
                       </div>
 
-                      {/* Category and Priority row */}
+                      {/* Category, Priority and ETA row */}
                       <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
                         {/* Category Select */}
                         <div style={{ flex: 1 }}>
@@ -343,6 +347,39 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                               pointerEvents: 'none'
                             }} />
                           </div>
+                        </div>
+
+                        {/* ETA Date */}
+                        <div style={{ flex: 1 }}>
+                          <label htmlFor="eta_date" style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: '#4b5563',
+                            marginBottom: 10
+                          }}>
+                            <CalendarDays style={{ width: 14, height: 14 }} />
+                            ETA
+                          </label>
+                          <input
+                            type="date"
+                            id="eta_date"
+                            value={etaDate}
+                            onChange={(e) => setEtaDate(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '12px 14px',
+                              borderRadius: 8,
+                              border: '1px solid #e5e5eb',
+                              backgroundColor: '#f9fafb',
+                              color: etaDate ? '#1e1e2e' : '#9ca3af',
+                              fontSize: 14,
+                              outline: 'none',
+                              boxSizing: 'border-box'
+                            }}
+                          />
                         </div>
                       </div>
 

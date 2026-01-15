@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, User, Clock, CheckCircle2, Tag, Flag, ArrowLeft, ArrowRight, Archive, Edit2, ChevronDown, UserCheck, UserMinus } from "lucide-react";
+import { X, User, Clock, CheckCircle2, Tag, Flag, ArrowLeft, ArrowRight, Archive, Edit2, ChevronDown, UserCheck, UserMinus, CalendarDays } from "lucide-react";
 import type { AssetWithCreator } from "../hooks/useAssets";
 import { getDaysUntilDelete } from "../hooks/useAssets";
 import { ASSET_CATEGORIES, ASSET_PRIORITIES, type AssetCategory, type AssetPriority } from "@/types/database";
@@ -10,11 +10,13 @@ interface AssetDetailModalProps {
   asset: AssetWithCreator | null;
   isOpen: boolean;
   onClose: () => void;
+  onMarkInProgress?: (id: string) => void;
   onMarkCompleted?: (id: string) => void;
   onMarkImplemented?: (id: string) => void;
   onMoveToPending?: (id: string) => void;
+  onMoveToInProgress?: (id: string) => void;
   onMoveToCompleted?: (id: string) => void;
-  onUpdate?: (id: string, data: { name: string; blurb: string; category: AssetCategory | null; priority: AssetPriority | null }) => void;
+  onUpdate?: (id: string, data: { name: string; blurb: string; category: AssetCategory | null; priority: AssetPriority | null; eta_date: string | null }) => void;
   onClaim?: (id: string) => void;
   onUnclaim?: (id: string) => void;
   isTransitioning?: boolean;
@@ -25,6 +27,11 @@ const STATUS_STYLES = {
     bg: 'rgba(202, 138, 4, 0.15)',
     color: '#b45309',
     label: 'Pending'
+  },
+  in_progress: {
+    bg: 'rgba(124, 58, 237, 0.15)',
+    color: '#7c3aed',
+    label: 'In Progress'
   },
   completed: {
     bg: 'rgba(59, 130, 246, 0.15)',
@@ -42,9 +49,11 @@ export function AssetDetailModal({
   asset,
   isOpen,
   onClose,
+  onMarkInProgress,
   onMarkCompleted,
   onMarkImplemented,
   onMoveToPending,
+  onMoveToInProgress,
   onMoveToCompleted,
   onUpdate,
   onClaim,
@@ -57,6 +66,7 @@ export function AssetDetailModal({
   const [editBlurb, setEditBlurb] = useState("");
   const [editCategory, setEditCategory] = useState<AssetCategory | "">("");
   const [editPriority, setEditPriority] = useState<AssetPriority | "">("");
+  const [editEtaDate, setEditEtaDate] = useState<string>("");
 
   // Reset edit state when asset changes or modal closes
   useEffect(() => {
@@ -65,6 +75,7 @@ export function AssetDetailModal({
       setEditBlurb(asset.blurb || "");
       setEditCategory(asset.category || "");
       setEditPriority(asset.priority || "");
+      setEditEtaDate(asset.eta_date || "");
     }
     setIsEditing(false);
   }, [asset, isOpen]);
@@ -89,6 +100,7 @@ export function AssetDetailModal({
         blurb: editBlurb.trim(),
         category: editCategory || null,
         priority: editPriority || null,
+        eta_date: editEtaDate || null,
       });
       setIsEditing(false);
     }
@@ -99,6 +111,7 @@ export function AssetDetailModal({
     setEditBlurb(asset.blurb || "");
     setEditCategory(asset.category || "");
     setEditPriority(asset.priority || "");
+    setEditEtaDate(asset.eta_date || "");
     setIsEditing(false);
   };
 
@@ -397,9 +410,9 @@ export function AssetDetailModal({
                 )}
               </div>
 
-              {/* Category & Priority (edit mode only) */}
+              {/* Category, Priority & ETA (edit mode only) */}
               {isEditing && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
                   {/* Category */}
                   <div>
                     <h3 style={{
@@ -496,6 +509,45 @@ export function AssetDetailModal({
                         pointerEvents: 'none'
                       }} />
                     </div>
+                  </div>
+
+                  {/* ETA Date */}
+                  <div>
+                    <h3 style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: '#6b7280',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      margin: '0 0 8px 0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}>
+                      <CalendarDays style={{ width: 14, height: 14 }} />
+                      ETA Date
+                    </h3>
+                    <input
+                      type="date"
+                      value={editEtaDate}
+                      onChange={(e) => setEditEtaDate(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        borderRadius: 8,
+                        border: '1px solid #e5e5eb',
+                        backgroundColor: '#f9fafb',
+                        color: editEtaDate ? '#1e1e2e' : '#9ca3af',
+                        fontSize: 14,
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
+                    />
+                    <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 4, margin: '4px 0 0 0' }}>
+                      Creates a deliverable on schedule
+                    </p>
                   </div>
                 </div>
               )}
@@ -750,7 +802,7 @@ export function AssetDetailModal({
                   Save Changes
                 </button>
               </div>
-            ) : (onMarkCompleted || onMarkImplemented || onMoveToPending || onMoveToCompleted || onClaim || onUnclaim) && (
+            ) : (onMarkInProgress || onMarkCompleted || onMarkImplemented || onMoveToPending || onMoveToInProgress || onMoveToCompleted || onClaim || onUnclaim) && (
               <div style={{
                 padding: '16px 24px',
                 borderTop: '1px solid #e5e5eb',
@@ -865,6 +917,31 @@ export function AssetDetailModal({
                   </button>
                 )}
 
+                {onMoveToInProgress && (
+                  <button
+                    onClick={() => onMoveToInProgress(asset.id)}
+                    disabled={isTransitioning}
+                    style={{
+                      flex: 1,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '12px 20px',
+                      borderRadius: 10,
+                      border: '1px solid #e5e5eb',
+                      backgroundColor: '#fff',
+                      color: '#6b7280',
+                      fontSize: 14,
+                      fontWeight: 500,
+                      cursor: isTransitioning ? 'not-allowed' : 'pointer',
+                      opacity: isTransitioning ? 0.7 : 1,
+                    }}
+                  >
+                    <ArrowLeft style={{ marginRight: 8, width: 16, height: 16 }} />
+                    Back to In Progress
+                  </button>
+                )}
+
                 {onMoveToCompleted && (
                   <button
                     onClick={() => onMoveToCompleted(asset.id)}
@@ -891,6 +968,31 @@ export function AssetDetailModal({
                 )}
 
                 {/* Forward buttons */}
+                {onMarkInProgress && (
+                  <button
+                    onClick={() => onMarkInProgress(asset.id)}
+                    disabled={isTransitioning}
+                    style={{
+                      flex: 1,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '12px 20px',
+                      borderRadius: 10,
+                      border: 'none',
+                      backgroundColor: isTransitioning ? '#c4b5fd' : '#7c3aed',
+                      color: '#fff',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      cursor: isTransitioning ? 'not-allowed' : 'pointer',
+                      opacity: isTransitioning ? 0.7 : 1,
+                    }}
+                  >
+                    Start Working
+                    <ArrowRight style={{ marginLeft: 8, width: 16, height: 16 }} />
+                  </button>
+                )}
+
                 {onMarkCompleted && (
                   <button
                     onClick={() => onMarkCompleted(asset.id)}

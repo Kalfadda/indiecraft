@@ -26,7 +26,7 @@ export function ScheduleView() {
   const [typeFilter, setTypeFilter] = useState<EventType | null>(null);
 
   const { data: events, isLoading } = useEvents({});
-  const { createEvent, updateEvent, deleteEvent } = useEventMutations();
+  const { createEvent, updateEvent, deleteEvent, deleteEventWithLinkedTask, checkLinkedTask } = useEventMutations();
 
   // Filter events based on selected type
   const filteredEvents = useMemo(() => {
@@ -72,8 +72,23 @@ export function ScheduleView() {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (confirm("Are you sure you want to delete this event?")) {
-      await deleteEvent.mutateAsync(eventId);
+    // Check if event has a linked task
+    const linkedTask = await checkLinkedTask(eventId);
+
+    if (linkedTask) {
+      const deleteLinked = confirm(
+        `⚠️ This event is linked to task "${linkedTask.name}".\n\n` +
+        `Do you want to delete BOTH the event and the linked task?\n\n` +
+        `Click OK to delete both, or Cancel to keep both.`
+      );
+
+      if (deleteLinked) {
+        await deleteEventWithLinkedTask.mutateAsync(eventId);
+      }
+    } else {
+      if (confirm("Are you sure you want to delete this event?")) {
+        await deleteEvent.mutateAsync(eventId);
+      }
     }
   };
 

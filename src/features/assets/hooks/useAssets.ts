@@ -4,6 +4,7 @@ import type { Asset, Profile, AssetCategory, AssetStatus } from "@/types/databas
 
 export type AssetWithCreator = Asset & {
   creator: Pick<Profile, "display_name" | "email"> | null;
+  in_progress_user: Pick<Profile, "display_name" | "email"> | null;
   completer: Pick<Profile, "display_name" | "email"> | null;
   implementer: Pick<Profile, "display_name" | "email"> | null;
   claimer: Pick<Profile, "display_name" | "email"> | null;
@@ -31,6 +32,7 @@ export function useAssets(statusOrOptions?: AssetStatus | UseAssetsOptions) {
           `
           *,
           creator:profiles!created_by(display_name, email),
+          in_progress_user:profiles!in_progress_by(display_name, email),
           completer:profiles!completed_by(display_name, email),
           implementer:profiles!implemented_by(display_name, email),
           claimer:profiles!claimed_by(display_name, email)
@@ -77,6 +79,7 @@ export function useAsset(id: string) {
           `
           *,
           creator:profiles!created_by(display_name, email),
+          in_progress_user:profiles!in_progress_by(display_name, email),
           completer:profiles!completed_by(display_name, email),
           implementer:profiles!implemented_by(display_name, email),
           claimer:profiles!claimed_by(display_name, email)

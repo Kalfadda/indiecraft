@@ -38,6 +38,11 @@ const STATUS_STYLES = {
     color: '#b45309',
     label: 'Pending'
   },
+  in_progress: {
+    bg: 'rgba(124, 58, 237, 0.15)',
+    color: '#7c3aed',
+    label: 'In Progress'
+  },
   completed: {
     bg: 'rgba(59, 130, 246, 0.15)',
     color: '#2563eb',

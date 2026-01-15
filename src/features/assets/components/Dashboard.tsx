@@ -12,7 +12,7 @@ import { Compare } from "@/features/tools";
 import { ScheduleView } from "@/features/schedule";
 import { ModelingView } from "@/features/modeling";
 import { FeatureRequestsView } from "@/features/featurerequests";
-import { Box, LogOut, Settings, Clock, Wifi, Tag, X, ListTodo, Boxes, CircleCheck, Archive, Info, CalendarDays, Wrench, ChevronDown, GitCompare, Cpu, Lightbulb, FileQuestion } from "lucide-react";
+import { Box, LogOut, Settings, Clock, Wifi, Tag, X, ListTodo, Boxes, CircleCheck, Archive, Info, CalendarDays, Wrench, ChevronDown, GitCompare, Cpu, Lightbulb, FileQuestion, PlayCircle } from "lucide-react";
 import { ASSET_CATEGORIES, type AssetCategory, type AssetStatus } from "@/types/database";
 
 type MainView = "tasks" | "schedule" | "modelingrequests" | "compare" | "featurerequests";
@@ -82,6 +82,7 @@ export function Dashboard() {
   ];
 
   const { data: pendingAssets } = useAssets({ status: "pending", category: selectedCategory });
+  const { data: inProgressAssets } = useAssets({ status: "in_progress", category: selectedCategory });
   const { data: completedAssets } = useAssets({ status: "completed", category: selectedCategory });
   const { data: implementedAssets } = useAssets({ status: "implemented", category: selectedCategory });
 
@@ -91,6 +92,12 @@ export function Dashboard() {
       label: "Pending",
       icon: <Clock style={{ width: 16, height: 16 }} />,
       count: pendingAssets?.length,
+    },
+    {
+      id: "in_progress",
+      label: "In Progress",
+      icon: <PlayCircle style={{ width: 16, height: 16 }} />,
+      count: inProgressAssets?.length,
     },
     {
       id: "completed",
