@@ -370,7 +370,19 @@ export function AssetDetailModal({
                 {isEditing ? (
                   <textarea
                     value={editBlurb}
-                    onChange={(e) => setEditBlurb(e.target.value)}
+                    onChange={(e) => {
+                      setEditBlurb(e.target.value);
+                      // Auto-resize based on content
+                      e.target.style.height = 'auto';
+                      e.target.style.height = `${Math.min(e.target.scrollHeight, 400)}px`;
+                    }}
+                    ref={(el) => {
+                      // Set initial height based on content when entering edit mode
+                      if (el) {
+                        el.style.height = 'auto';
+                        el.style.height = `${Math.min(el.scrollHeight, 400)}px`;
+                      }
+                    }}
                     style={{
                       width: '100%',
                       minHeight: 120,
@@ -382,10 +394,11 @@ export function AssetDetailModal({
                       borderRadius: 10,
                       border: '1px solid #e5e5eb',
                       backgroundColor: '#f9fafb',
-                      resize: 'vertical',
+                      resize: 'none',
                       outline: 'none',
                       fontFamily: 'inherit',
                       boxSizing: 'border-box',
+                      overflowY: 'auto',
                     }}
                     onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
                     onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
