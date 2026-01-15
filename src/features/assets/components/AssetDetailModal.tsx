@@ -374,6 +374,7 @@ export function AssetDetailModal({
                     style={{
                       width: '100%',
                       minHeight: 120,
+                      maxHeight: 400,
                       padding: 16,
                       fontSize: 14,
                       color: '#4b5563',
@@ -384,6 +385,7 @@ export function AssetDetailModal({
                       resize: 'vertical',
                       outline: 'none',
                       fontFamily: 'inherit',
+                      boxSizing: 'border-box',
                     }}
                     onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
                     onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
