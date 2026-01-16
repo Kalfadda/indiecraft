@@ -216,14 +216,15 @@ export function useAssetMutations() {
 
       if (error) throw error;
 
-      // Remove linked scheduled event when task is completed
+      // Remove linked deliverable event when task is completed
       const { error: eventError } = await supabase
         .from("events")
         .delete()
-        .eq("linked_asset_id", id);
+        .eq("linked_asset_id", id)
+        .eq("type", "deliverable");
 
       if (eventError) {
-        console.warn("Failed to delete linked event:", eventError);
+        console.warn("Failed to delete linked deliverable event:", eventError);
       }
 
       return asset;

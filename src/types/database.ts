@@ -319,7 +319,8 @@ export type Database = {
       comments: {
         Row: {
           id: string;
-          asset_id: string;
+          asset_id: string | null;
+          sprint_id: string | null;
           content: string;
           created_by: string;
           created_at: string;
@@ -327,7 +328,8 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          asset_id: string;
+          asset_id?: string | null;
+          sprint_id?: string | null;
           content: string;
           created_by: string;
           created_at?: string;
@@ -335,7 +337,8 @@ export type Database = {
         };
         Update: {
           id?: string;
-          asset_id?: string;
+          asset_id?: string | null;
+          sprint_id?: string | null;
           content?: string;
           created_by?: string;
           created_at?: string;

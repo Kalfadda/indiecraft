@@ -25,10 +25,15 @@ export function useCommentRealtime() {
         },
         async (payload) => {
           const newRecord = payload.new as Record<string, unknown>;
-          const assetId = newRecord.asset_id as string;
+          const assetId = newRecord.asset_id as string | null;
+          const sprintId = newRecord.sprint_id as string | null;
 
-          // Invalidate comments for this specific asset
-          queryClient.invalidateQueries({ queryKey: ["comments", assetId] });
+          // Invalidate comments for the appropriate entity
+          if (assetId) {
+            queryClient.invalidateQueries({ queryKey: ["comments", assetId] });
+          } else if (sprintId) {
+            queryClient.invalidateQueries({ queryKey: ["sprint-comments", sprintId] });
+          }
 
           // Skip notifications if no user is logged in
           if (!user) return;
@@ -45,19 +50,28 @@ export function useCommentRealtime() {
             .eq("id", actorId)
             .single();
 
-          // Fetch the asset name for the notification
-          const { data: asset } = await supabase
-            .from("assets")
-            .select("name")
-            .eq("id", assetId)
-            .single();
-
           const actorName =
             actorProfile?.display_name ||
             actorProfile?.email?.split("@")[0] ||
             "Someone";
 
-          const itemName = asset?.name || "a task";
+          // Fetch the item name based on whether it's an asset or sprint comment
+          let itemName = "an item";
+          if (assetId) {
+            const { data: asset } = await supabase
+              .from("assets")
+              .select("name")
+              .eq("id", assetId)
+              .single();
+            itemName = asset?.name || "a task";
+          } else if (sprintId) {
+            const { data: sprint } = await supabase
+              .from("sprints")
+              .select("name")
+              .eq("id", sprintId)
+              .single();
+            itemName = sprint?.name || "a sprint";
+          }
 
           addNotification(
             createNotificationConfig("comment_created", itemName, actorName, false)

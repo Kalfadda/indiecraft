@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Zap, Plus, Trash2, CheckCircle2, AlertCircle, Edit2, Link2 } from "lucide-react";
+import { X, Zap, Plus, Trash2, CheckCircle2, AlertCircle, Edit2, Link2, MessageCircle, Send } from "lucide-react";
 import type { SprintWithDetails } from "../hooks/useSprints";
 import { useSprintMutations } from "../hooks/useSprintMutations";
 import { useSprintDependencies, useTaskDependencyMutations } from "../hooks/useTaskDependencies";
+import { useSprintComments } from "../hooks/useSprintComments";
+import { useSprintCommentMutations } from "../hooks/useSprintCommentMutations";
 import { useAssets } from "@/features/assets/hooks/useAssets";
+import { useAuthStore } from "@/stores/authStore";
 import { SPRINT_STATUSES, ASSET_CATEGORIES, type Asset } from "@/types/database";
 
 interface SprintDetailModalProps {
@@ -19,10 +22,16 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [newComment, setNewComment] = useState("");
 
+  const user = useAuthStore((state) => state.user);
   const { updateSprint, deleteSprint, removeTaskFromSprint, addTaskToSprint } = useSprintMutations();
   const { data: dependencies = [] } = useSprintDependencies(sprint?.id);
   const { addDependency, removeDependencyById } = useTaskDependencyMutations();
+
+  // Comments
+  const { data: comments = [], isLoading: commentsLoading } = useSprintComments(sprint?.id);
+  const { createComment, deleteComment } = useSprintCommentMutations();
 
   // Get all tasks for adding to sprint
   const { data: allTasks = [] } = useAssets();
@@ -83,6 +92,20 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
       sprintId: sprint.id,
     });
     setShowAddDependency(null);
+  };
+
+  const handleAddComment = () => {
+    if (!newComment.trim() || !sprint) return;
+    createComment.mutate({
+      sprint_id: sprint.id,
+      content: newComment.trim(),
+    });
+    setNewComment("");
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    if (!sprint) return;
+    deleteComment.mutate({ commentId, sprintId: sprint.id });
   };
 
   // Get dependencies for a specific task
@@ -658,6 +681,207 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                     </div>
                   )}
                 </div>
+
+                {/* Comments Section */}
+                <div style={{ marginTop: 24 }}>
+                  <h3 style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: '#6b7280',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    margin: '0 0 12px 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}>
+                    <MessageCircle style={{ width: 14, height: 14 }} />
+                    Comments ({comments.length})
+                  </h3>
+
+                  {/* Comments list */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 12,
+                    marginBottom: 16,
+                  }}>
+                    {commentsLoading ? (
+                      <div style={{
+                        padding: 16,
+                        textAlign: 'center',
+                        color: '#9ca3af',
+                        fontSize: 14,
+                      }}>
+                        Loading comments...
+                      </div>
+                    ) : comments.length === 0 ? (
+                      <div style={{
+                        padding: 20,
+                        textAlign: 'center',
+                        color: '#9ca3af',
+                        fontSize: 14,
+                        backgroundColor: '#f9fafb',
+                        borderRadius: 10,
+                        border: '1px dashed #e5e5eb',
+                      }}>
+                        No comments yet. Add one to discuss this sprint.
+                      </div>
+                    ) : (
+                      comments.map((comment) => {
+                        const isOwner = user?.id === comment.created_by;
+                        const authorName = comment.author?.display_name || comment.author?.email?.split('@')[0] || 'Unknown';
+                        return (
+                          <motion.div
+                            key={comment.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            style={{
+                              backgroundColor: '#f9fafb',
+                              borderRadius: 10,
+                              padding: 14,
+                              border: '1px solid #e5e5eb',
+                            }}
+                          >
+                            <div style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'flex-start',
+                              marginBottom: 8,
+                            }}>
+                              <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                              }}>
+                                <div style={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: '50%',
+                                  backgroundColor: '#7c3aed',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: '#fff',
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                }}>
+                                  {authorName.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <span style={{
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    color: '#1e1e2e',
+                                  }}>
+                                    {authorName}
+                                  </span>
+                                  <span style={{
+                                    fontSize: 12,
+                                    color: '#9ca3af',
+                                    marginLeft: 8,
+                                  }}>
+                                    {formatCommentDate(comment.created_at)}
+                                  </span>
+                                </div>
+                              </div>
+                              {isOwner && (
+                                <button
+                                  onClick={() => handleDeleteComment(comment.id)}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: 24,
+                                    height: 24,
+                                    borderRadius: 6,
+                                    border: 'none',
+                                    backgroundColor: 'transparent',
+                                    color: '#9ca3af',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                  onMouseOver={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                                    e.currentTarget.style.color = '#ef4444';
+                                  }}
+                                  onMouseOut={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.color = '#9ca3af';
+                                  }}
+                                  title="Delete comment"
+                                >
+                                  <Trash2 style={{ width: 14, height: 14 }} />
+                                </button>
+                              )}
+                            </div>
+                            <p style={{
+                              fontSize: 14,
+                              color: '#4b5563',
+                              lineHeight: 1.5,
+                              margin: 0,
+                              whiteSpace: 'pre-wrap',
+                            }}>
+                              {comment.content}
+                            </p>
+                          </motion.div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Add comment form */}
+                  <div style={{
+                    display: 'flex',
+                    gap: 10,
+                  }}>
+                    <input
+                      type="text"
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleAddComment();
+                        }
+                      }}
+                      placeholder="Add a comment..."
+                      style={{
+                        flex: 1,
+                        padding: '10px 14px',
+                        borderRadius: 8,
+                        border: '1px solid #e5e5eb',
+                        backgroundColor: '#fff',
+                        fontSize: 14,
+                        outline: 'none',
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
+                    />
+                    <button
+                      onClick={handleAddComment}
+                      disabled={!newComment.trim() || createComment.isPending}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '10px 16px',
+                        borderRadius: 8,
+                        border: 'none',
+                        backgroundColor: newComment.trim() ? '#7c3aed' : '#e5e5eb',
+                        color: newComment.trim() ? '#fff' : '#9ca3af',
+                        fontSize: 14,
+                        fontWeight: 500,
+                        cursor: newComment.trim() ? 'pointer' : 'not-allowed',
+                        transition: 'all 0.15s ease',
+                        gap: 6,
+                      }}
+                    >
+                      <Send style={{ width: 14, height: 14 }} />
+                      Post
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Footer */}
@@ -734,4 +958,24 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
       )}
     </AnimatePresence>
   );
+}
+
+function formatCommentDate(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+  });
 }
