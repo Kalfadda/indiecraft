@@ -9,6 +9,7 @@ import { useSprintCommentMutations } from "../hooks/useSprintCommentMutations";
 import { useAssets } from "@/features/assets/hooks/useAssets";
 import { useAssetMutations } from "@/features/assets/hooks/useAssetMutations";
 import { useAuthStore } from "@/stores/authStore";
+import { useNavigationStore } from "@/stores/navigationStore";
 import { SPRINT_STATUSES, ASSET_CATEGORIES, type Asset, type AssetCategory } from "@/types/database";
 
 interface SprintDetailModalProps {
@@ -32,6 +33,7 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
   const [newTaskCategory, setNewTaskCategory] = useState<AssetCategory | "">("");
 
   const user = useAuthStore((state) => state.user);
+  const setPendingTaskId = useNavigationStore((state) => state.setPendingTaskId);
   const { updateSprint, deleteSprint, removeTaskFromSprint, addTaskToSprint } = useSprintMutations();
   const { createAsset } = useAssetMutations();
   const { data: dependencies = [] } = useSprintDependencies(sprint?.id);
@@ -138,6 +140,11 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
       content: newComment.trim(),
     });
     setNewComment("");
+  };
+
+  const handleNavigateToTask = (taskId: string) => {
+    setPendingTaskId(taskId);
+    onClose();
   };
 
   const handleDeleteComment = (commentId: string) => {
@@ -489,13 +496,23 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                               {/* Task info */}
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <span style={{
-                                    fontSize: 14,
-                                    fontWeight: 500,
-                                    color: '#1e1e2e',
-                                  }}>
+                                  <button
+                                    onClick={() => handleNavigateToTask(task.id)}
+                                    style={{
+                                      fontSize: 14,
+                                      fontWeight: 500,
+                                      color: '#1e1e2e',
+                                      background: 'none',
+                                      border: 'none',
+                                      padding: 0,
+                                      cursor: 'pointer',
+                                      textDecoration: 'none',
+                                    }}
+                                    onMouseOver={(e) => e.currentTarget.style.color = '#7c3aed'}
+                                    onMouseOut={(e) => e.currentTarget.style.color = '#1e1e2e'}
+                                  >
                                     {task.name}
-                                  </span>
+                                  </button>
                                   {category && (
                                     <span style={{
                                       padding: '2px 8px',

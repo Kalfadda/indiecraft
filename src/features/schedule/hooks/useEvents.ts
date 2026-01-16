@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import type { Event, Profile, EventType, EventVisibility } from "@/types/database";
+import type { Event, Profile, EventType, EventVisibility, Asset } from "@/types/database";
 
 export type EventWithCreator = Event & {
   creator: Pick<Profile, "display_name" | "email"> | null;
+  linked_asset: Pick<Asset, "name"> | null;
 };
 
 export interface UseEventsOptions {
@@ -25,7 +26,8 @@ export function useEvents(options: UseEventsOptions = {}) {
         .select(
           `
           *,
-          creator:profiles!created_by(display_name, email)
+          creator:profiles!created_by(display_name, email),
+          linked_asset:assets!linked_asset_id(name)
         `
         )
         .order("event_date", { ascending: true });
@@ -68,7 +70,8 @@ export function useEvent(id: string) {
         .select(
           `
           *,
-          creator:profiles!created_by(display_name, email)
+          creator:profiles!created_by(display_name, email),
+          linked_asset:assets!linked_asset_id(name)
         `
         )
         .eq("id", id)

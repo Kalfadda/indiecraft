@@ -3,11 +3,14 @@ import { getVersion } from "@tauri-apps/api/app";
 import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { useAuth } from "@/features/auth";
-import { useAssets } from "../hooks/useAssets";
+import { useAssets, useAsset } from "../hooks/useAssets";
+import { useAssetMutations } from "../hooks/useAssetMutations";
 import { useAssetRealtime } from "../hooks/useAssetRealtime";
 import { useCommentRealtime } from "../hooks/useCommentRealtime";
+import { useNavigationStore } from "@/stores/navigationStore";
 import { AssetList } from "./AssetList";
 import { AssetForm } from "./AssetForm";
+import { AssetDetailModal } from "./AssetDetailModal";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import { Compare } from "@/features/tools";
 import { ScheduleView } from "@/features/schedule";
@@ -68,6 +71,35 @@ export function Dashboard() {
   const [toolsExpanded, setToolsExpanded] = useState(false);
   const [technicalExpanded, setTechnicalExpanded] = useState(false);
   const [modelingExpanded, setModelingExpanded] = useState(false);
+
+  // Navigation store for cross-component task navigation
+  const pendingTaskId = useNavigationStore((state) => state.pendingTaskId);
+  const setPendingTaskId = useNavigationStore((state) => state.setPendingTaskId);
+
+  // Fetch the pending task for the navigation modal
+  const { data: pendingTask } = useAsset(pendingTaskId || "");
+  const {
+    markAsInProgress,
+    markAsCompleted,
+    markAsImplemented,
+    moveToPending,
+    moveToInProgress,
+    moveToCompleted,
+    updateAsset,
+    claimAsset,
+    unclaimAsset,
+  } = useAssetMutations();
+
+  // Switch to tasks view when a task navigation is requested
+  useEffect(() => {
+    if (pendingTaskId) {
+      setMainView("tasks");
+    }
+  }, [pendingTaskId]);
+
+  const handleCloseNavigatedTask = () => {
+    setPendingTaskId(null);
+  };
 
   useAssetRealtime();
   useCommentRealtime();
@@ -714,6 +746,46 @@ export function Dashboard() {
           </main>
         )}
       </div>
+
+      {/* Task navigation modal - shows when clicking a task from other views */}
+      <AssetDetailModal
+        asset={pendingTask || null}
+        isOpen={!!pendingTaskId && !!pendingTask}
+        onClose={handleCloseNavigatedTask}
+        onMarkInProgress={(id) => {
+          markAsInProgress.mutate(id);
+          handleCloseNavigatedTask();
+        }}
+        onMarkCompleted={(id) => {
+          markAsCompleted.mutate(id);
+          handleCloseNavigatedTask();
+        }}
+        onMarkImplemented={(id) => {
+          markAsImplemented.mutate(id);
+          handleCloseNavigatedTask();
+        }}
+        onMoveToPending={(id) => {
+          moveToPending.mutate(id);
+          handleCloseNavigatedTask();
+        }}
+        onMoveToInProgress={(id) => {
+          moveToInProgress.mutate(id);
+          handleCloseNavigatedTask();
+        }}
+        onMoveToCompleted={(id) => {
+          moveToCompleted.mutate(id);
+          handleCloseNavigatedTask();
+        }}
+        onUpdate={(id, data) => {
+          updateAsset.mutate({ id, ...data });
+        }}
+        onClaim={(id) => {
+          claimAsset.mutate(id);
+        }}
+        onUnclaim={(id) => {
+          unclaimAsset.mutate(id);
+        }}
+      />
     </div>
   );
 }

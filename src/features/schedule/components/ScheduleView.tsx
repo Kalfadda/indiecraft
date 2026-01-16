@@ -330,6 +330,7 @@ export function ScheduleView() {
                       <EventCard
                         key={event.id}
                         event={event}
+                        linkedAssetName={event.linked_asset?.name}
                         onEdit={handleEditEvent}
                         onDelete={handleDeleteEvent}
                       />
@@ -377,6 +378,7 @@ export function ScheduleView() {
                         <EventCard
                           key={event.id}
                           event={event}
+                          linkedAssetName={event.linked_asset?.name}
                           onEdit={handleEditEvent}
                           onDelete={handleDeleteEvent}
                         />
@@ -417,6 +419,7 @@ export function ScheduleView() {
                       <EventCard
                         key={event.id}
                         event={event}
+                        linkedAssetName={event.linked_asset?.name}
                         onEdit={handleEditEvent}
                         onDelete={handleDeleteEvent}
                       />
@@ -457,6 +460,7 @@ export function ScheduleView() {
                   >
                     <EventCard
                       event={event}
+                      linkedAssetName={event.linked_asset?.name}
                       onEdit={handleEditEvent}
                       onDelete={handleDeleteEvent}
                     />

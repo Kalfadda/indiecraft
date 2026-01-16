@@ -2,6 +2,7 @@ import { Flag, Package, Tag, Edit2, Trash2, Eye, EyeOff, Link } from "lucide-rea
 import { motion } from "motion/react";
 import { Countdown } from "./Countdown";
 import { EVENT_TYPES, type Event, type EventType } from "@/types/database";
+import { useNavigationStore } from "@/stores/navigationStore";
 
 interface EventCardProps {
   event: Event;
@@ -53,6 +54,13 @@ function getEventDateTime(dateString: string, timeString: string | null): Date {
 export function EventCard({ event, linkedAssetName, onEdit, onDelete }: EventCardProps) {
   const eventMeta = EVENT_TYPES[event.type];
   const isLabel = event.type === "label";
+  const setPendingTaskId = useNavigationStore((state) => state.setPendingTaskId);
+
+  const handleAssetClick = () => {
+    if (event.linked_asset_id) {
+      setPendingTaskId(event.linked_asset_id);
+    }
+  };
 
   const cardStyle: React.CSSProperties = {
     backgroundColor: "#fff",
@@ -244,11 +252,25 @@ export function EventCard({ event, linkedAssetName, onEdit, onDelete }: EventCar
           <Countdown targetDate={getEventDateTime(event.event_date, event.event_time)} />
         )}
 
-        {event.type === "deliverable" && linkedAssetName && (
-          <span style={assetLinkStyle}>
+        {event.type === "deliverable" && linkedAssetName && event.linked_asset_id && (
+          <button
+            onClick={handleAssetClick}
+            style={{
+              ...assetLinkStyle,
+              border: "none",
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 0.2)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 0.1)";
+            }}
+          >
             <Link style={{ width: 12, height: 12 }} />
             {linkedAssetName}
-          </span>
+          </button>
         )}
       </div>
     </motion.div>
