@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, User, Clock, CheckCircle2, Tag, Flag, ArrowLeft, ArrowRight, Archive, Edit2, ChevronDown, UserCheck, UserMinus, CalendarDays } from "lucide-react";
+import { X, User, Clock, CheckCircle2, Tag, Flag, ArrowLeft, ArrowRight, Archive, Edit2, ChevronDown, UserCheck, UserMinus, CalendarDays, MessageCircle, Send, Trash2, GitBranch } from "lucide-react";
 import type { AssetWithCreator } from "../hooks/useAssets";
 import { getDaysUntilDelete } from "../hooks/useAssets";
-import { ASSET_CATEGORIES, ASSET_PRIORITIES, type AssetCategory, type AssetPriority } from "@/types/database";
+import { useComments } from "../hooks/useComments";
+import { useCommentMutations } from "../hooks/useCommentMutations";
+import { usePipelinesForTask } from "@/features/pipelines/hooks/usePipelines";
+import { ASSET_CATEGORIES, ASSET_PRIORITIES, PIPELINE_STATUSES, type AssetCategory, type AssetPriority } from "@/types/database";
 import { useAuthStore } from "@/stores/authStore";
 
 interface AssetDetailModalProps {
@@ -67,6 +70,15 @@ export function AssetDetailModal({
   const [editCategory, setEditCategory] = useState<AssetCategory | "">("");
   const [editPriority, setEditPriority] = useState<AssetPriority | "">("");
   const [editEtaDate, setEditEtaDate] = useState<string>("");
+  const [newComment, setNewComment] = useState("");
+
+  // Comments
+  const { data: comments = [], isLoading: commentsLoading } = useComments(asset?.id);
+  const { createComment, deleteComment } = useCommentMutations();
+
+  // Pipeline info
+  const { data: pipelines = [] } = usePipelinesForTask(asset?.id);
+  const activePipeline = pipelines.find(p => p.status === "active" || p.status === "completed");
 
   // Reset edit state when asset changes or modal closes
   useEffect(() => {
@@ -78,6 +90,7 @@ export function AssetDetailModal({
       setEditEtaDate(asset.eta_date || "");
     }
     setIsEditing(false);
+    setNewComment("");
   }, [asset, isOpen]);
 
   if (!asset) return null;
@@ -113,6 +126,20 @@ export function AssetDetailModal({
     setEditPriority(asset.priority || "");
     setEditEtaDate(asset.eta_date || "");
     setIsEditing(false);
+  };
+
+  const handleAddComment = () => {
+    if (!newComment.trim() || !asset) return;
+    createComment.mutate({
+      asset_id: asset.id,
+      content: newComment.trim(),
+    });
+    setNewComment("");
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    if (!asset) return;
+    deleteComment.mutate({ commentId, assetId: asset.id });
   };
 
   return (
@@ -259,6 +286,24 @@ export function AssetDetailModal({
                     }}>
                       <Flag style={{ width: 12, height: 12 }} />
                       {priority.label}
+                    </span>
+                  )}
+
+                  {/* Pipeline badge */}
+                  {activePipeline && (
+                    <span style={{
+                      padding: '4px 10px',
+                      borderRadius: 999,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      backgroundColor: `${PIPELINE_STATUSES[activePipeline.status].color}20`,
+                      color: PIPELINE_STATUSES[activePipeline.status].color,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                    }}>
+                      <GitBranch style={{ width: 12, height: 12 }} />
+                      {activePipeline.name}
                     </span>
                   )}
                 </div>
@@ -767,6 +812,207 @@ export function AssetDetailModal({
                   </>
                 )}
               </div>
+
+              {/* Comments Section */}
+              <div style={{ marginTop: 24 }}>
+                <h3 style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#6b7280',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  margin: '0 0 12px 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}>
+                  <MessageCircle style={{ width: 14, height: 14 }} />
+                  Updates ({comments.length})
+                </h3>
+
+                {/* Comments list */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12,
+                  marginBottom: 16,
+                }}>
+                  {commentsLoading ? (
+                    <div style={{
+                      padding: 16,
+                      textAlign: 'center',
+                      color: '#9ca3af',
+                      fontSize: 14,
+                    }}>
+                      Loading updates...
+                    </div>
+                  ) : comments.length === 0 ? (
+                    <div style={{
+                      padding: 20,
+                      textAlign: 'center',
+                      color: '#9ca3af',
+                      fontSize: 14,
+                      backgroundColor: '#f9fafb',
+                      borderRadius: 10,
+                      border: '1px dashed #e5e5eb',
+                    }}>
+                      No updates yet. Add one to track progress.
+                    </div>
+                  ) : (
+                    comments.map((comment) => {
+                      const isOwner = user?.id === comment.created_by;
+                      const authorName = comment.author?.display_name || comment.author?.email?.split('@')[0] || 'Unknown';
+                      return (
+                        <motion.div
+                          key={comment.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          style={{
+                            backgroundColor: '#f9fafb',
+                            borderRadius: 10,
+                            padding: 14,
+                            border: '1px solid #e5e5eb',
+                          }}
+                        >
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            marginBottom: 8,
+                          }}>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                            }}>
+                              <div style={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: '50%',
+                                backgroundColor: '#7c3aed',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#fff',
+                                fontSize: 12,
+                                fontWeight: 600,
+                              }}>
+                                {authorName.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <span style={{
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                  color: '#1e1e2e',
+                                }}>
+                                  {authorName}
+                                </span>
+                                <span style={{
+                                  fontSize: 12,
+                                  color: '#9ca3af',
+                                  marginLeft: 8,
+                                }}>
+                                  {formatCommentDate(comment.created_at)}
+                                </span>
+                              </div>
+                            </div>
+                            {isOwner && (
+                              <button
+                                onClick={() => handleDeleteComment(comment.id)}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: 6,
+                                  border: 'none',
+                                  backgroundColor: 'transparent',
+                                  color: '#9ca3af',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                }}
+                                onMouseOver={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                                  e.currentTarget.style.color = '#ef4444';
+                                }}
+                                onMouseOut={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                  e.currentTarget.style.color = '#9ca3af';
+                                }}
+                                title="Delete update"
+                              >
+                                <Trash2 style={{ width: 14, height: 14 }} />
+                              </button>
+                            )}
+                          </div>
+                          <p style={{
+                            fontSize: 14,
+                            color: '#4b5563',
+                            lineHeight: 1.5,
+                            margin: 0,
+                            whiteSpace: 'pre-wrap',
+                          }}>
+                            {comment.content}
+                          </p>
+                        </motion.div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Add comment form */}
+                <div style={{
+                  display: 'flex',
+                  gap: 10,
+                }}>
+                  <input
+                    type="text"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAddComment();
+                      }
+                    }}
+                    placeholder="Add a progress update..."
+                    style={{
+                      flex: 1,
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      border: '1px solid #e5e5eb',
+                      backgroundColor: '#fff',
+                      fontSize: 14,
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
+                  />
+                  <button
+                    onClick={handleAddComment}
+                    disabled={!newComment.trim() || createComment.isPending}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '10px 16px',
+                      borderRadius: 8,
+                      border: 'none',
+                      backgroundColor: newComment.trim() ? '#7c3aed' : '#e5e5eb',
+                      color: newComment.trim() ? '#fff' : '#9ca3af',
+                      fontSize: 14,
+                      fontWeight: 500,
+                      cursor: newComment.trim() ? 'pointer' : 'not-allowed',
+                      transition: 'all 0.15s ease',
+                      gap: 6,
+                    }}
+                  >
+                    <Send style={{ width: 14, height: 14 }} />
+                    Post
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Footer with actions */}
@@ -1078,5 +1324,24 @@ function formatFullDate(dateString: string): string {
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+  });
+}
+
+function formatCommentDate(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
   });
 }

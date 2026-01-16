@@ -215,10 +215,22 @@ export function useAssetMutations() {
         .single();
 
       if (error) throw error;
+
+      // Remove linked scheduled event when task is completed
+      const { error: eventError } = await supabase
+        .from("events")
+        .delete()
+        .eq("linked_asset_id", id);
+
+      if (eventError) {
+        console.warn("Failed to delete linked event:", eventError);
+      }
+
       return asset;
     },
     onSuccess: (asset) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
       addNotification(
         createNotificationConfig(
           "task_completed",
@@ -247,10 +259,22 @@ export function useAssetMutations() {
         .single();
 
       if (error) throw error;
+
+      // Remove linked scheduled event when task is implemented (in case it wasn't removed at completed)
+      const { error: eventError } = await supabase
+        .from("events")
+        .delete()
+        .eq("linked_asset_id", id);
+
+      if (eventError) {
+        console.warn("Failed to delete linked event:", eventError);
+      }
+
       return asset;
     },
     onSuccess: (asset) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
       addNotification(
         createNotificationConfig(
           "task_implemented",

@@ -1,8 +1,9 @@
 import { motion } from "motion/react";
-import { Clock, User, X, Tag, Flag, UserCheck } from "lucide-react";
+import { Clock, User, X, Tag, Flag, UserCheck, GitBranch } from "lucide-react";
 import type { AssetWithCreator } from "../hooks/useAssets";
 import { getDaysUntilDelete } from "../hooks/useAssets";
-import { ASSET_CATEGORIES, ASSET_PRIORITIES } from "@/types/database";
+import { usePipelinesForTask } from "@/features/pipelines/hooks/usePipelines";
+import { ASSET_CATEGORIES, ASSET_PRIORITIES, PIPELINE_STATUSES } from "@/types/database";
 
 // Keyframes for the claimed glow effect
 const claimedGlowKeyframes = `
@@ -70,6 +71,10 @@ export function AssetCard({
   const daysLeft = asset.status === "implemented" ? getDaysUntilDelete(asset.implemented_at) : null;
   const isClaimed = !!asset.claimed_by;
   const claimerName = asset.claimer?.display_name || asset.claimer?.email || null;
+
+  // Get pipelines this task belongs to
+  const { data: pipelines = [] } = usePipelinesForTask(asset.id);
+  const activePipeline = pipelines.find(p => p.status === "active" || p.status === "completed");
 
   return (
     <motion.div
@@ -199,6 +204,32 @@ export function AssetCard({
                   <UserCheck style={{ width: 10, height: 10 }} />
                   {claimerName.split('@')[0]}
                 </motion.span>
+              )}
+
+              {/* Pipeline badge */}
+              {activePipeline && (
+                <span style={{
+                  borderRadius: 999,
+                  padding: '3px 8px',
+                  fontSize: 11,
+                  fontWeight: 500,
+                  backgroundColor: `${PIPELINE_STATUSES[activePipeline.status].color}18`,
+                  color: PIPELINE_STATUSES[activePipeline.status].color,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  maxWidth: 120,
+                  overflow: 'hidden',
+                }}>
+                  <GitBranch style={{ width: 10, height: 10, flexShrink: 0 }} />
+                  <span style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {activePipeline.name}
+                  </span>
+                </span>
               )}
             </div>
 
