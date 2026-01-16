@@ -278,7 +278,7 @@ export function ScheduleView() {
           <p style={{ color: "#6b7280" }}>Loading events...</p>
         </div>
       ) : viewMode === "calendar" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 24, alignItems: "start" }}>
           {/* Calendar */}
           <Calendar
             events={filteredEvents || []}
@@ -287,7 +287,7 @@ export function ScheduleView() {
           />
 
           {/* Sidebar: Selected Date Events or Upcoming */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, maxHeight: "calc(100vh - 180px)", overflow: "hidden" }}>
             {selectedDate ? (
               <>
                 <div
@@ -295,6 +295,7 @@ export function ScheduleView() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
+                    flexShrink: 0,
                   }}
                 >
                   <h3 style={{ fontSize: 16, fontWeight: 600, color: "#1e1e2e", margin: 0 }}>
@@ -324,57 +325,10 @@ export function ScheduleView() {
                   </button>
                 </div>
 
-                {selectedDateEvents.length > 0 ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    {selectedDateEvents.map((event) => (
-                      <EventCard
-                        key={event.id}
-                        event={event}
-                        linkedAssetName={event.linked_asset?.name}
-                        onEdit={handleEditEvent}
-                        onDelete={handleDeleteEvent}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      ...cardStyle,
-                      padding: 24,
-                      textAlign: "center",
-                    }}
-                  >
-                    <p style={{ color: "#6b7280", margin: "0 0 12px" }}>No events on this day</p>
-                    <button
-                      onClick={() => {
-                        setEditingEvent(null);
-                        setIsFormOpen(true);
-                      }}
-                      style={{
-                        padding: "8px 16px",
-                        borderRadius: 6,
-                        border: "1px solid #e5e5eb",
-                        backgroundColor: "#fff",
-                        color: "#7c3aed",
-                        fontSize: 13,
-                        fontWeight: 500,
-                        cursor: "pointer",
-                        transition: "all 0.15s ease",
-                      }}
-                    >
-                      Add Event
-                    </button>
-                  </div>
-                )}
-
-                {/* Always show upcoming events below */}
-                {upcomingEvents.length > 0 && (
-                  <>
-                    <h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "8px 0 0" }}>
-                      Upcoming
-                    </h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      {upcomingEvents.slice(0, 5).map((event) => (
+                <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16, paddingRight: 4 }}>
+                  {selectedDateEvents.length > 0 ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      {selectedDateEvents.map((event) => (
                         <EventCard
                           key={event.id}
                           event={event}
@@ -384,12 +338,61 @@ export function ScheduleView() {
                         />
                       ))}
                     </div>
-                  </>
-                )}
+                  ) : (
+                    <div
+                      style={{
+                        ...cardStyle,
+                        padding: 24,
+                        textAlign: "center",
+                      }}
+                    >
+                      <p style={{ color: "#6b7280", margin: "0 0 12px" }}>No events on this day</p>
+                      <button
+                        onClick={() => {
+                          setEditingEvent(null);
+                          setIsFormOpen(true);
+                        }}
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: 6,
+                          border: "1px solid #e5e5eb",
+                          backgroundColor: "#fff",
+                          color: "#7c3aed",
+                          fontSize: 13,
+                          fontWeight: 500,
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        Add Event
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Always show upcoming events below */}
+                  {upcomingEvents.length > 0 && (
+                    <>
+                      <h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: 0 }}>
+                        Upcoming
+                      </h3>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {upcomingEvents.map((event) => (
+                          <EventCard
+                            key={event.id}
+                            event={event}
+                            linkedAssetName={event.linked_asset?.name}
+                            onEdit={handleEditEvent}
+                            onDelete={handleDeleteEvent}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </>
             ) : (
               <>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: "#1e1e2e", margin: 0 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: "#1e1e2e", margin: 0, flexShrink: 0 }}>
                   Upcoming Events
                 </h3>
                 {upcomingEvents.length === 0 ? (
@@ -411,11 +414,12 @@ export function ScheduleView() {
                       display: "flex",
                       flexDirection: "column",
                       gap: 12,
-                      maxHeight: "calc(100vh - 300px)",
                       overflowY: "auto",
+                      flex: 1,
+                      paddingRight: 4,
                     }}
                   >
-                    {upcomingEvents.slice(0, 10).map((event) => (
+                    {upcomingEvents.map((event) => (
                       <EventCard
                         key={event.id}
                         event={event}
@@ -424,18 +428,6 @@ export function ScheduleView() {
                         onDelete={handleDeleteEvent}
                       />
                     ))}
-                    {upcomingEvents.length > 10 && (
-                      <p
-                        style={{
-                          fontSize: 13,
-                          color: "#6b7280",
-                          textAlign: "center",
-                          margin: "8px 0",
-                        }}
-                      >
-                        +{upcomingEvents.length - 10} more events
-                      </p>
-                    )}
                   </div>
                 )}
               </>
