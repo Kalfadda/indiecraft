@@ -138,7 +138,7 @@ export function useGoalsForTask(assetId: string | undefined) {
   });
 }
 
-// Get the inbox task count (tasks without a goal)
+// Get the inbox task count (tasks without a goal, excluding completed)
 export function useInboxCount() {
   return useQuery({
     queryKey: ["inbox_count"],
@@ -146,7 +146,8 @@ export function useInboxCount() {
       const { count, error } = await supabase
         .from("assets")
         .select("*", { count: "exact", head: true })
-        .is("goal_id", null);
+        .is("goal_id", null)
+        .neq("status", "completed");
 
       if (error) throw error;
       return count || 0;

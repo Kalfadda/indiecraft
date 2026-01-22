@@ -57,6 +57,15 @@ export function useGoalMutations() {
       // Set timestamps based on status changes
       if (data.status === "completed") {
         updateData.completed_at = new Date().toISOString();
+
+        // Delete all completed tasks associated with this goal
+        const { error: deleteError } = await supabase
+          .from("assets")
+          .delete()
+          .eq("goal_id", id)
+          .eq("status", "completed");
+
+        if (deleteError) throw deleteError;
       }
 
       const { data: goal, error } = await supabase
@@ -72,6 +81,7 @@ export function useGoalMutations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["goals"] });
       queryClient.invalidateQueries({ queryKey: ["goal"] });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
     },
   });
 

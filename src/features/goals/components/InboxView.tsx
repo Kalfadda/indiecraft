@@ -25,8 +25,8 @@ export function InboxView({ onNavigateToTask }: InboxViewProps) {
   const { data: activeGoals = [] } = useGoals({ status: "active" });
   const { addTaskToGoal } = useGoalMutations();
 
-  // Filter to inbox tasks (no goal)
-  let inboxTasks = allTasks.filter(t => !t.goal_id);
+  // Filter to inbox tasks (no goal, and not completed - completed orphans auto-delete after 7 days)
+  let inboxTasks = allTasks.filter(t => !t.goal_id && t.status !== "completed");
 
   // Apply category filter
   if (selectedCategory) {
