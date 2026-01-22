@@ -1,6 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
+import {
+  useNotificationStore,
+  createNotificationConfig,
+} from "@/stores/notificationStore";
 import type { GoalStatus } from "@/types/database";
 
 interface CreateGoalData {
@@ -22,6 +26,8 @@ interface UpdateGoalData {
 export function useGoalMutations() {
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
+  const profile = useAuthStore((state) => state.profile);
+  const addNotification = useNotificationStore((state) => state.addNotification);
 
   const createGoal = useMutation({
     mutationFn: async (data: CreateGoalData) => {
@@ -43,8 +49,16 @@ export function useGoalMutations() {
       if (error) throw error;
       return goal;
     },
-    onSuccess: () => {
+    onSuccess: (goal) => {
       queryClient.invalidateQueries({ queryKey: ["goals"] });
+      addNotification(
+        createNotificationConfig(
+          "goal_created",
+          goal.name,
+          profile?.display_name || profile?.email || "You",
+          true
+        )
+      );
     },
   });
 
@@ -53,9 +67,10 @@ export function useGoalMutations() {
       if (!user) throw new Error("Not authenticated");
 
       const updateData: Record<string, unknown> = { ...data };
+      const isCompletingGoal = data.status === "completed";
 
       // Set timestamps based on status changes
-      if (data.status === "completed") {
+      if (isCompletingGoal) {
         updateData.completed_at = new Date().toISOString();
 
         // Delete all completed tasks associated with this goal
@@ -76,12 +91,23 @@ export function useGoalMutations() {
         .single();
 
       if (error) throw error;
-      return goal;
+      return { goal, isCompletingGoal };
     },
-    onSuccess: () => {
+    onSuccess: ({ goal, isCompletingGoal }) => {
       queryClient.invalidateQueries({ queryKey: ["goals"] });
       queryClient.invalidateQueries({ queryKey: ["goal"] });
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+
+      if (isCompletingGoal) {
+        addNotification(
+          createNotificationConfig(
+            "goal_completed",
+            goal.name,
+            profile?.display_name || profile?.email || "You",
+            true
+          )
+        );
+      }
     },
   });
 

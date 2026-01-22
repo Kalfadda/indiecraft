@@ -4,6 +4,8 @@ import type { Goal, GoalStatus, Profile, Asset } from "@/types/database";
 
 export type GoalWithCreator = Goal & {
   creator: Pick<Profile, "display_name" | "email"> | null;
+  task_count?: number;
+  completed_task_count?: number;
 };
 
 export type GoalWithDetails = GoalWithCreator & {
@@ -29,16 +31,78 @@ export function useGoals(options?: UseGoalsOptions) {
         .select(`
           *,
           creator:profiles!created_by(display_name, email)
-        `)
-        .order("created_at", { ascending: false });
+        `);
 
       if (status) {
         query = query.eq("status", status);
       }
 
-      const { data, error } = await query;
+      const { data: goals, error } = await query;
       if (error) throw error;
-      return (data || []) as GoalWithCreator[];
+      if (!goals || goals.length === 0) return [];
+
+      // Fetch task counts for all goals
+      const goalIds = goals.map(g => g.id);
+      const { data: taskCounts } = await supabase
+        .from("assets")
+        .select("goal_id, status")
+        .in("goal_id", goalIds);
+
+      // Calculate counts per goal
+      const countsMap = new Map<string, { total: number; completed: number }>();
+      goalIds.forEach(id => countsMap.set(id, { total: 0, completed: 0 }));
+
+      (taskCounts || []).forEach(task => {
+        if (task.goal_id) {
+          const counts = countsMap.get(task.goal_id)!;
+          counts.total++;
+          if (task.status === "completed") {
+            counts.completed++;
+          }
+        }
+      });
+
+      // Enrich goals with counts
+      const enrichedGoals = goals.map(goal => ({
+        ...goal,
+        task_count: countsMap.get(goal.id)?.total || 0,
+        completed_task_count: countsMap.get(goal.id)?.completed || 0,
+      })) as GoalWithCreator[];
+
+      // Smart sort: prioritize goals close to completion, empty goals last
+      return enrichedGoals.sort((a, b) => {
+        const aTotal = a.task_count || 0;
+        const bTotal = b.task_count || 0;
+        const aCompleted = a.completed_task_count || 0;
+        const bCompleted = b.completed_task_count || 0;
+
+        // Empty goals go to the bottom
+        if (aTotal === 0 && bTotal > 0) return 1;
+        if (bTotal === 0 && aTotal > 0) return -1;
+        if (aTotal === 0 && bTotal === 0) {
+          // Both empty: sort by created_at descending
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+
+        const aPercent = aTotal > 0 ? aCompleted / aTotal : 0;
+        const bPercent = bTotal > 0 ? bCompleted / bTotal : 0;
+
+        // Goals at 100% (ready to be marked complete) float to top
+        if (aPercent === 1 && bPercent < 1) return -1;
+        if (bPercent === 1 && aPercent < 1) return 1;
+
+        // Goals close to completion (80%+) get priority boost
+        const aCloseToFinish = aPercent >= 0.8;
+        const bCloseToFinish = bPercent >= 0.8;
+        if (aCloseToFinish && !bCloseToFinish) return -1;
+        if (bCloseToFinish && !aCloseToFinish) return 1;
+
+        // Within same tier, sort by percentage descending
+        if (aPercent !== bPercent) return bPercent - aPercent;
+
+        // Same percentage: sort by total tasks (larger goals first)
+        return bTotal - aTotal;
+      });
     },
   });
 }

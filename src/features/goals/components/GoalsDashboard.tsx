@@ -340,14 +340,14 @@ function GoalProgressCard({
   goal,
   onClick,
 }: {
-  goal: Goal & { creator: { display_name: string | null; email: string } | null };
+  goal: Goal & { creator: { display_name: string | null; email: string } | null; task_count?: number; completed_task_count?: number };
   onClick: () => void;
 }) {
   const theme = useTheme();
-  const { data: details } = useGoal(goal.id);
 
-  const taskCount = details?.task_count || 0;
-  const completedCount = details?.completed_task_count || 0;
+  // Use pre-fetched counts from useGoals (no extra query needed)
+  const taskCount = goal.task_count || 0;
+  const completedCount = goal.completed_task_count || 0;
   const progress = taskCount > 0 ? Math.round((completedCount / taskCount) * 100) : 0;
 
   return (

@@ -228,21 +228,20 @@ export function GoalsView() {
   );
 }
 
-// Wrapper to fetch task counts for each goal
+// Wrapper that uses pre-fetched task counts from useGoals
 function GoalCardWrapper({
   goal,
   onClick,
 }: {
-  goal: Goal & { creator: { display_name: string | null; email: string } | null };
+  goal: Goal & { creator: { display_name: string | null; email: string } | null; task_count?: number; completed_task_count?: number };
   onClick: () => void;
 }) {
-  const { data: details } = useGoal(goal.id);
-
+  // Use pre-fetched counts from useGoals (no extra query needed)
   return (
     <GoalCard
       goal={goal}
-      taskCount={details?.task_count || 0}
-      completedCount={details?.completed_task_count || 0}
+      taskCount={goal.task_count || 0}
+      completedCount={goal.completed_task_count || 0}
       onClick={onClick}
     />
   );

@@ -192,6 +192,7 @@ export function useAssetMutations() {
     },
     onSuccess: (asset) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["asset", asset.id] });
       queryClient.invalidateQueries({ queryKey: ["goals"] });
       queryClient.invalidateQueries({ queryKey: ["goal"] });
       addNotification(
@@ -238,6 +239,7 @@ export function useAssetMutations() {
     },
     onSuccess: (asset) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["asset", asset.id] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["goals"] });
       queryClient.invalidateQueries({ queryKey: ["goal"] });
@@ -271,8 +273,9 @@ export function useAssetMutations() {
       if (error) throw error;
       return asset;
     },
-    onSuccess: () => {
+    onSuccess: (asset) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["asset", asset.id] });
       queryClient.invalidateQueries({ queryKey: ["goals"] });
       queryClient.invalidateQueries({ queryKey: ["goal"] });
     },
@@ -298,8 +301,9 @@ export function useAssetMutations() {
       if (error) throw error;
       return asset;
     },
-    onSuccess: () => {
+    onSuccess: (asset) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["asset", asset.id] });
       queryClient.invalidateQueries({ queryKey: ["goals"] });
       queryClient.invalidateQueries({ queryKey: ["goal"] });
     },
@@ -393,6 +397,7 @@ export function useAssetMutations() {
     },
     onSuccess: (asset) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["asset", asset.id] });
       addNotification(
         createNotificationConfig(
           "task_claimed",
@@ -422,6 +427,7 @@ export function useAssetMutations() {
     },
     onSuccess: (asset) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["asset", asset.id] });
       addNotification(
         createNotificationConfig(
           "task_unclaimed",
@@ -455,6 +461,7 @@ export function useAssetMutations() {
     },
     onSuccess: (asset) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["asset", asset.id] });
       addNotification(
         createNotificationConfig(
           "task_blocked",
@@ -484,8 +491,9 @@ export function useAssetMutations() {
       if (error) throw error;
       return asset;
     },
-    onSuccess: () => {
+    onSuccess: (asset) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["asset", asset.id] });
     },
   });
 

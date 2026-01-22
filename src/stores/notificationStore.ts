@@ -9,6 +9,8 @@ export type NotificationType =
   | "task_blocked"
   | "task_claimed"
   | "task_unclaimed"
+  | "goal_created"
+  | "goal_completed"
   | "schedule_created"
   | "schedule_updated"
   | "model_request_created"
@@ -146,6 +148,18 @@ const notificationConfigs: Record<
     messageOwn: (name) => `You unclaimed "${name}"`,
     messageOther: (actor, name) => `${actor} unclaimed "${name}"`,
     variant: "info",
+  },
+  goal_created: {
+    title: "Goal Created",
+    messageOwn: (name) => `You created goal "${name}"`,
+    messageOther: (actor, name) => `${actor} created goal "${name}"`,
+    variant: "success",
+  },
+  goal_completed: {
+    title: "Goal Completed",
+    messageOwn: (name) => `You completed goal "${name}"`,
+    messageOther: (actor, name) => `${actor} completed goal "${name}"`,
+    variant: "success",
   },
   schedule_created: {
     title: "Event Added",
