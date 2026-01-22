@@ -3,6 +3,7 @@ import { Clock, User, X, Flag, MessageSquare } from "lucide-react";
 import type { FeatureRequestWithCreator } from "../hooks/useFeatureRequests";
 import { getDaysUntilHide } from "../hooks/useFeatureRequests";
 import { ASSET_PRIORITIES, FEATURE_REQUEST_STATUSES } from "@/types/database";
+import { useTheme } from "@/stores/themeStore";
 
 interface FeatureRequestCardProps {
   request: FeatureRequestWithCreator;
@@ -19,6 +20,7 @@ export function FeatureRequestCard({
   onDelete,
   isDeleting,
 }: FeatureRequestCardProps) {
+  const theme = useTheme();
   const creatorName =
     request.creator?.display_name || request.creator?.email || "Unknown";
   const priority = request.priority ? ASSET_PRIORITIES[request.priority] : null;
@@ -47,14 +49,16 @@ export function FeatureRequestCard({
           borderRadius: 12,
           border: isDenied
             ? '1px solid rgba(239, 68, 68, 0.3)'
-            : '1px solid #e5e5eb',
+            : `1px solid ${theme.colors.cardBorder}`,
           backgroundColor: isDenied
             ? 'rgba(239, 68, 68, 0.04)'
-            : '#ffffff',
+            : theme.colors.card,
           padding: 20,
           transition: 'all 0.3s ease',
           boxSizing: 'border-box',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+          boxShadow: theme.isDark
+            ? '0 1px 3px rgba(0,0,0,0.2)'
+            : '0 1px 3px rgba(0,0,0,0.06)',
           cursor: onClick ? 'pointer' : 'default',
           position: 'relative',
         }}
@@ -119,13 +123,14 @@ export function FeatureRequestCard({
             <h3 style={{
               fontWeight: 600,
               fontSize: 17,
-              color: '#1e1e2e',
+              color: theme.colors.text,
               lineHeight: 1.3,
               margin: 0,
               overflow: 'hidden',
               display: '-webkit-box',
               WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical'
+              WebkitBoxOrient: 'vertical',
+              transition: 'all 0.3s ease',
             }}>
               {request.name}
             </h3>
@@ -149,19 +154,19 @@ export function FeatureRequestCard({
                 borderRadius: 6,
                 border: 'none',
                 backgroundColor: 'transparent',
-                color: '#9ca3af',
+                color: theme.colors.textMuted,
                 cursor: isDeleting ? 'not-allowed' : 'pointer',
                 opacity: isDeleting ? 0.5 : 1,
                 transition: 'all 0.15s ease',
                 flexShrink: 0,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(220, 38, 38, 0.1)';
-                e.currentTarget.style.color = '#dc2626';
+                e.currentTarget.style.backgroundColor = theme.colors.errorBg;
+                e.currentTarget.style.color = theme.colors.error;
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = '#9ca3af';
+                e.currentTarget.style.color = theme.colors.textMuted;
               }}
             >
               <X style={{ width: 16, height: 16 }} />
@@ -174,13 +179,14 @@ export function FeatureRequestCard({
           <p style={{
             marginBottom: 14,
             fontSize: 13,
-            color: '#6b7280',
+            color: theme.colors.textMuted,
             overflow: 'hidden',
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             marginTop: 0,
             lineHeight: 1.5,
+            transition: 'all 0.3s ease',
           }}>
             {request.description}
           </p>
@@ -209,13 +215,14 @@ export function FeatureRequestCard({
             </div>
             <p style={{
               fontSize: 13,
-              color: '#6b7280',
+              color: theme.colors.textMuted,
               margin: 0,
               lineHeight: 1.4,
               overflow: 'hidden',
               display: '-webkit-box',
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
+              transition: 'all 0.3s ease',
             }}>
               {request.denial_reason}
             </p>
@@ -228,7 +235,8 @@ export function FeatureRequestCard({
           alignItems: 'center',
           gap: 8,
           fontSize: 12,
-          color: '#9ca3af'
+          color: theme.colors.textMuted,
+          transition: 'all 0.3s ease',
         }}>
           <User style={{ width: 13, height: 13 }} />
           <span>{creatorName}</span>
@@ -242,10 +250,11 @@ export function FeatureRequestCard({
           <div style={{
             marginTop: 12,
             paddingTop: 12,
-            borderTop: '1px solid #f0f0f5',
+            borderTop: `1px solid ${theme.colors.borderLight}`,
             fontSize: 12,
-            color: '#9ca3af',
+            color: theme.colors.textMuted,
             textAlign: 'center',
+            transition: 'all 0.3s ease',
           }}>
             Click to view details
           </div>

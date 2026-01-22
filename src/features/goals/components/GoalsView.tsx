@@ -1,55 +1,57 @@
 import { useState } from "react";
-import { Zap, CheckCircle2, Plus, Loader2 } from "lucide-react";
-import { useSprints, useSprint } from "../hooks/useSprints";
-import { SprintCard } from "./SprintCard";
-import { SprintDetailModal } from "./SprintDetailModal";
-import { SprintForm } from "./SprintForm";
-import type { SprintStatus, Sprint } from "@/types/database";
+import { Target, CheckCircle2, Plus, Loader2 } from "lucide-react";
+import { useTheme } from "@/stores/themeStore";
+import { useGoals, useGoal } from "../hooks/useGoals";
+import { GoalCard } from "./GoalCard";
+import { GoalDetailModal } from "./GoalDetailModal";
+import { GoalForm } from "./GoalForm";
+import type { GoalStatus, Goal } from "@/types/database";
 
-type SprintTab = "active" | "completed";
+type GoalTab = "active" | "completed";
 
-export function SprintsView() {
-  const [activeTab, setActiveTab] = useState<SprintTab>("active");
-  const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null);
+export function GoalsView() {
+  const theme = useTheme();
+  const [activeTab, setActiveTab] = useState<GoalTab>("active");
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
 
-  // Get sprints by status
-  const { data: activeSprints, isLoading: loadingActive } = useSprints({ status: "active" });
-  const { data: completedSprints } = useSprints({ status: "completed" });
+  // Get goals by status
+  const { data: activeGoals, isLoading: loadingActive } = useGoals({ status: "active" });
+  const { data: completedGoals } = useGoals({ status: "completed" });
 
-  // Get selected sprint details
-  const { data: selectedSprint } = useSprint(selectedSprintId || undefined);
+  // Get selected goal details
+  const { data: selectedGoal } = useGoal(selectedGoalId || undefined);
 
-  const tabs: { id: SprintTab; label: string; icon: React.ReactNode; count?: number }[] = [
+  const tabs: { id: GoalTab; label: string; icon: React.ReactNode; count?: number }[] = [
     {
       id: "active",
       label: "Active",
-      icon: <Zap style={{ width: 16, height: 16 }} />,
-      count: activeSprints?.length,
+      icon: <Target style={{ width: 16, height: 16 }} />,
+      count: activeGoals?.length,
     },
     {
       id: "completed",
       label: "Completed",
       icon: <CheckCircle2 style={{ width: 16, height: 16 }} />,
-      count: completedSprints?.length,
+      count: completedGoals?.length,
     },
   ];
 
-  const getCurrentSprints = () => {
+  const getCurrentGoals = () => {
     switch (activeTab) {
       case "active":
-        return activeSprints || [];
+        return activeGoals || [];
       case "completed":
-        return completedSprints || [];
+        return completedGoals || [];
       default:
         return [];
     }
   };
 
-  const sprints = getCurrentSprints();
+  const goals = getCurrentGoals();
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, transition: 'all 0.3s ease' }}>
       {/* Header */}
       <div style={{
         display: 'flex',
@@ -62,18 +64,20 @@ export function SprintsView() {
           <h2 style={{
             fontSize: 26,
             fontWeight: 700,
-            color: '#1e1e2e',
+            color: theme.colors.text,
             marginBottom: 6,
             margin: 0,
+            transition: 'all 0.3s ease',
           }}>
-            Sprints
+            Goals
           </h2>
           <p style={{
             fontSize: 14,
-            color: '#6b7280',
+            color: theme.colors.textMuted,
             margin: 0,
+            transition: 'all 0.3s ease',
           }}>
-            Group tasks across departments into focused sprints
+            Organize tasks into focused goals
           </p>
         </div>
 
@@ -87,21 +91,21 @@ export function SprintsView() {
             fontSize: 14,
             fontWeight: 600,
             color: '#fff',
-            backgroundColor: '#7c3aed',
+            backgroundColor: theme.colors.primary,
             border: 'none',
             borderRadius: 10,
             cursor: 'pointer',
-            transition: 'all 0.15s ease',
+            transition: 'all 0.3s ease',
           }}
           onMouseOver={(e) => {
-            e.currentTarget.style.backgroundColor = '#6d28d9';
+            e.currentTarget.style.backgroundColor = theme.colors.primaryHover;
           }}
           onMouseOut={(e) => {
-            e.currentTarget.style.backgroundColor = '#7c3aed';
+            e.currentTarget.style.backgroundColor = theme.colors.primary;
           }}
         >
           <Plus style={{ width: 16, height: 16 }} />
-          New Sprint
+          New Goal
         </button>
       </div>
 
@@ -109,8 +113,9 @@ export function SprintsView() {
       <div style={{
         display: 'flex',
         gap: 8,
-        borderBottom: '1px solid #e5e5eb',
+        borderBottom: `1px solid ${theme.colors.border}`,
         paddingBottom: 0,
+        transition: 'all 0.3s ease',
       }}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -125,22 +130,22 @@ export function SprintsView() {
                 padding: '12px 16px',
                 fontSize: 14,
                 fontWeight: 500,
-                color: isActive ? '#7c3aed' : '#6b7280',
+                color: isActive ? theme.colors.primary : theme.colors.textMuted,
                 backgroundColor: 'transparent',
                 border: 'none',
-                borderBottom: isActive ? '2px solid #7c3aed' : '2px solid transparent',
+                borderBottom: isActive ? `2px solid ${theme.colors.primary}` : '2px solid transparent',
                 cursor: 'pointer',
-                transition: 'all 0.15s ease',
+                transition: 'all 0.3s ease',
                 marginBottom: -1,
               }}
               onMouseOver={(e) => {
                 if (!isActive) {
-                  e.currentTarget.style.color = '#4b5563';
+                  e.currentTarget.style.color = theme.colors.text;
                 }
               }}
               onMouseOut={(e) => {
                 if (!isActive) {
-                  e.currentTarget.style.color = '#6b7280';
+                  e.currentTarget.style.color = theme.colors.textMuted;
                 }
               }}
             >
@@ -151,9 +156,10 @@ export function SprintsView() {
                   padding: '2px 8px',
                   fontSize: 12,
                   fontWeight: 600,
-                  color: isActive ? '#7c3aed' : '#9ca3af',
-                  backgroundColor: isActive ? 'rgba(124, 58, 237, 0.1)' : '#f3f4f6',
+                  color: isActive ? theme.colors.primary : theme.colors.textMuted,
+                  backgroundColor: isActive ? `${theme.colors.primary}1a` : theme.colors.card,
                   borderRadius: 999,
+                  transition: 'all 0.3s ease',
                 }}>
                   {tab.count}
                 </span>
@@ -170,21 +176,23 @@ export function SprintsView() {
           justifyContent: 'center',
           alignItems: 'center',
           padding: 48,
-          color: '#9ca3af',
+          color: theme.colors.textMuted,
+          transition: 'all 0.3s ease',
         }}>
           <Loader2 style={{ width: 24, height: 24, animation: 'spin 1s linear infinite' }} />
         </div>
-      ) : sprints.length === 0 ? (
+      ) : goals.length === 0 ? (
         <div style={{
           textAlign: 'center',
           padding: 48,
-          color: '#9ca3af',
+          color: theme.colors.textMuted,
+          transition: 'all 0.3s ease',
         }}>
-          <Zap style={{ width: 48, height: 48, marginBottom: 16, opacity: 0.5 }} />
+          <Target style={{ width: 48, height: 48, marginBottom: 16, opacity: 0.5 }} />
           <p style={{ fontSize: 16, margin: 0 }}>
             {activeTab === "active"
-              ? "No active sprints. Create one to get started."
-              : "No completed sprints yet."}
+              ? "No active goals. Create one to get started."
+              : "No completed goals yet."}
           </p>
         </div>
       ) : (
@@ -193,26 +201,26 @@ export function SprintsView() {
           gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
           gap: 16,
         }}>
-          {sprints.map((sprint) => (
-            <SprintCardWrapper
-              key={sprint.id}
-              sprint={sprint}
-              onClick={() => setSelectedSprintId(sprint.id)}
+          {goals.map((goal) => (
+            <GoalCardWrapper
+              key={goal.id}
+              goal={goal}
+              onClick={() => setSelectedGoalId(goal.id)}
             />
           ))}
         </div>
       )}
 
-      {/* Sprint Detail Modal */}
-      <SprintDetailModal
-        sprint={selectedSprint || null}
-        isOpen={!!selectedSprintId}
-        onClose={() => setSelectedSprintId(null)}
+      {/* Goal Detail Modal */}
+      <GoalDetailModal
+        goal={selectedGoal || null}
+        isOpen={!!selectedGoalId}
+        onClose={() => setSelectedGoalId(null)}
       />
 
-      {/* Create Sprint Form Modal */}
+      {/* Create Goal Form Modal */}
       {showForm && (
-        <SprintForm
+        <GoalForm
           onClose={() => setShowForm(false)}
         />
       )}
@@ -220,21 +228,21 @@ export function SprintsView() {
   );
 }
 
-// Wrapper to fetch task counts for each sprint
-function SprintCardWrapper({
-  sprint,
+// Wrapper to fetch task counts for each goal
+function GoalCardWrapper({
+  goal,
   onClick,
 }: {
-  sprint: Sprint & { creator: { display_name: string | null; email: string } | null };
+  goal: Goal & { creator: { display_name: string | null; email: string } | null };
   onClick: () => void;
 }) {
-  const { data: details } = useSprint(sprint.id);
+  const { data: details } = useGoal(goal.id);
 
   return (
-    <SprintCard
-      sprint={sprint}
+    <GoalCard
+      goal={goal}
       taskCount={details?.task_count || 0}
-      implementedCount={details?.implemented_task_count || 0}
+      completedCount={details?.completed_task_count || 0}
       onClick={onClick}
     />
   );

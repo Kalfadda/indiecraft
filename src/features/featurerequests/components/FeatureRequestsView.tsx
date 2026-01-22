@@ -4,12 +4,14 @@ import { useFeatureRequests } from "../hooks/useFeatureRequests";
 import { useFeatureRequestRealtime } from "../hooks/useFeatureRequestRealtime";
 import { FeatureRequestList } from "./FeatureRequestList";
 import { FeatureRequestForm } from "./FeatureRequestForm";
+import { useTheme } from "@/stores/themeStore";
 import type { FeatureRequestStatus } from "@/types/database";
 
 type RequestTab = "open" | "denied";
 
 export function FeatureRequestsView() {
   const [activeTab, setActiveTab] = useState<RequestTab>("open");
+  const theme = useTheme();
 
   // Enable real-time updates
   useFeatureRequestRealtime();
@@ -47,18 +49,20 @@ export function FeatureRequestsView() {
           <h2 style={{
             fontSize: 26,
             fontWeight: 700,
-            color: '#1e1e2e',
+            color: theme.colors.text,
             marginBottom: 6,
             margin: 0,
+            transition: 'all 0.3s ease',
           }}>
             Feature Requests
           </h2>
           <p style={{
             fontSize: 14,
-            color: '#6b7280',
+            color: theme.colors.textMuted,
             margin: 0,
+            transition: 'all 0.3s ease',
           }}>
-            Request new features from the development team
+            Great ideas can get lost in the shuffle. This is where they live.
           </p>
         </div>
 
@@ -69,8 +73,9 @@ export function FeatureRequestsView() {
       <div style={{
         display: 'flex',
         gap: 8,
-        borderBottom: '1px solid #e5e5eb',
+        borderBottom: `1px solid ${theme.colors.border}`,
         paddingBottom: 0,
+        transition: 'all 0.3s ease',
       }}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -85,22 +90,22 @@ export function FeatureRequestsView() {
                 padding: '12px 16px',
                 fontSize: 14,
                 fontWeight: 500,
-                color: isActive ? '#06b6d4' : '#6b7280',
+                color: isActive ? theme.colors.primary : theme.colors.textMuted,
                 backgroundColor: 'transparent',
                 border: 'none',
-                borderBottom: isActive ? '2px solid #06b6d4' : '2px solid transparent',
+                borderBottom: isActive ? `2px solid ${theme.colors.primary}` : '2px solid transparent',
                 cursor: 'pointer',
-                transition: 'all 0.15s ease',
+                transition: 'all 0.3s ease',
                 marginBottom: -1,
               }}
               onMouseOver={(e) => {
                 if (!isActive) {
-                  e.currentTarget.style.color = '#4b5563';
+                  e.currentTarget.style.color = theme.colors.textSecondary;
                 }
               }}
               onMouseOut={(e) => {
                 if (!isActive) {
-                  e.currentTarget.style.color = '#6b7280';
+                  e.currentTarget.style.color = theme.colors.textMuted;
                 }
               }}
             >
@@ -112,8 +117,9 @@ export function FeatureRequestsView() {
                   borderRadius: 999,
                   fontSize: 12,
                   fontWeight: 600,
-                  backgroundColor: isActive ? 'rgba(6, 182, 212, 0.15)' : '#f0f0f5',
-                  color: isActive ? '#06b6d4' : '#6b7280',
+                  backgroundColor: isActive ? theme.colors.primaryLight : theme.colors.borderLight,
+                  color: isActive ? theme.colors.primary : theme.colors.textMuted,
+                  transition: 'all 0.3s ease',
                 }}>
                   {tab.count}
                 </span>

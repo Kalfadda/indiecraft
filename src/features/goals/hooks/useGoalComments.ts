@@ -2,15 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import type { Comment, Profile } from "@/types/database";
 
-export type SprintCommentWithAuthor = Comment & {
+export type GoalCommentWithAuthor = Comment & {
   author: Pick<Profile, "display_name" | "email"> | null;
 };
 
-export function useSprintComments(sprintId: string | undefined) {
+export function useGoalComments(goalId: string | undefined) {
   return useQuery({
-    queryKey: ["sprint-comments", sprintId],
-    queryFn: async (): Promise<SprintCommentWithAuthor[]> => {
-      if (!sprintId) return [];
+    queryKey: ["goal-comments", goalId],
+    queryFn: async (): Promise<GoalCommentWithAuthor[]> => {
+      if (!goalId) return [];
 
       const { data, error } = await supabase
         .from("comments")
@@ -20,12 +20,12 @@ export function useSprintComments(sprintId: string | undefined) {
           author:profiles!created_by(display_name, email)
         `
         )
-        .eq("sprint_id", sprintId)
+        .eq("goal_id", goalId)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      return (data || []) as SprintCommentWithAuthor[];
+      return (data || []) as GoalCommentWithAuthor[];
     },
-    enabled: !!sprintId,
+    enabled: !!goalId,
   });
 }

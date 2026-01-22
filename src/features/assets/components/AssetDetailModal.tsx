@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, User, Clock, CheckCircle2, Tag, Flag, ArrowLeft, ArrowRight, Archive, Edit2, ChevronDown, UserCheck, UserMinus, CalendarDays, MessageCircle, Send, Trash2, Zap } from "lucide-react";
+import { X, User, Clock, CheckCircle2, Tag, Flag, ArrowLeft, ArrowRight, Edit2, ChevronDown, UserCheck, UserMinus, CalendarDays, MessageCircle, Send, Trash2, Target, ShieldAlert, ShieldOff } from "lucide-react";
 import type { AssetWithCreator } from "../hooks/useAssets";
-import { getDaysUntilDelete } from "../hooks/useAssets";
 import { useComments } from "../hooks/useComments";
 import { useCommentMutations } from "../hooks/useCommentMutations";
-import { useSprintsForTask } from "@/features/sprints/hooks/useSprints";
-import { ASSET_CATEGORIES, ASSET_PRIORITIES, SPRINT_STATUSES, type AssetCategory, type AssetPriority } from "@/types/database";
+import { useGoalsForTask } from "@/features/goals";
+import { ASSET_CATEGORIES, ASSET_PRIORITIES, GOAL_STATUSES, type AssetCategory, type AssetPriority } from "@/types/database";
 import { useAuthStore } from "@/stores/authStore";
+import { useTheme } from "@/stores/themeStore";
 
 interface AssetDetailModalProps {
   asset: AssetWithCreator | null;
@@ -15,10 +15,10 @@ interface AssetDetailModalProps {
   onClose: () => void;
   onMarkInProgress?: (id: string) => void;
   onMarkCompleted?: (id: string) => void;
-  onMarkImplemented?: (id: string) => void;
+  onMarkBlocked?: (id: string, reason: string) => void;
   onMoveToPending?: (id: string) => void;
   onMoveToInProgress?: (id: string) => void;
-  onMoveToCompleted?: (id: string) => void;
+  onUnblock?: (id: string) => void;
   onUpdate?: (id: string, data: { name: string; blurb: string; category: AssetCategory | null; priority: AssetPriority | null; eta_date: string | null }) => void;
   onClaim?: (id: string) => void;
   onUnclaim?: (id: string) => void;
@@ -26,6 +26,11 @@ interface AssetDetailModalProps {
 }
 
 const STATUS_STYLES = {
+  blocked: {
+    bg: 'rgba(75, 0, 130, 0.2)',
+    color: '#4b0082',
+    label: 'Blocked'
+  },
   pending: {
     bg: 'rgba(202, 138, 4, 0.15)',
     color: '#b45309',
@@ -37,14 +42,9 @@ const STATUS_STYLES = {
     label: 'In Progress'
   },
   completed: {
-    bg: 'rgba(59, 130, 246, 0.15)',
-    color: '#2563eb',
-    label: 'Completed'
-  },
-  implemented: {
     bg: 'rgba(22, 163, 74, 0.15)',
     color: '#16a34a',
-    label: 'Implemented'
+    label: 'Completed'
   }
 };
 
@@ -54,16 +54,17 @@ export function AssetDetailModal({
   onClose,
   onMarkInProgress,
   onMarkCompleted,
-  onMarkImplemented,
+  onMarkBlocked,
   onMoveToPending,
   onMoveToInProgress,
-  onMoveToCompleted,
+  onUnblock,
   onUpdate,
   onClaim,
   onUnclaim,
   isTransitioning,
 }: AssetDetailModalProps) {
   const user = useAuthStore((state) => state.user);
+  const theme = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editBlurb, setEditBlurb] = useState("");
@@ -71,14 +72,16 @@ export function AssetDetailModal({
   const [editPriority, setEditPriority] = useState<AssetPriority | "">("");
   const [editEtaDate, setEditEtaDate] = useState<string>("");
   const [newComment, setNewComment] = useState("");
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [blockReason, setBlockReason] = useState("");
 
   // Comments
   const { data: comments = [], isLoading: commentsLoading } = useComments(asset?.id);
   const { createComment, deleteComment } = useCommentMutations();
 
-  // Sprint info
-  const { data: sprints = [] } = useSprintsForTask(asset?.id);
-  const activeSprint = sprints.find(s => s.status === "active" || s.status === "completed");
+  // Goal info
+  const { data: goals = [] } = useGoalsForTask(asset?.id);
+  const activeGoal = goals.find(g => g.status === "active" || g.status === "completed");
 
   // Reset edit state when asset changes or modal closes
   useEffect(() => {
@@ -91,6 +94,8 @@ export function AssetDetailModal({
     }
     setIsEditing(false);
     setNewComment("");
+    setShowBlockModal(false);
+    setBlockReason("");
   }, [asset, isOpen]);
 
   if (!asset) return null;
@@ -99,7 +104,6 @@ export function AssetDetailModal({
   const category = asset.category ? ASSET_CATEGORIES[asset.category] : null;
   const priority = asset.priority ? ASSET_PRIORITIES[asset.priority] : null;
   const statusStyle = STATUS_STYLES[asset.status];
-  const daysLeft = asset.status === "implemented" ? getDaysUntilDelete(asset.implemented_at) : null;
 
   // Claim state
   const isClaimed = !!asset.claimed_by;
@@ -158,6 +162,7 @@ export function AssetDetailModal({
               backgroundColor: 'rgba(0, 0, 0, 0.5)',
               backdropFilter: 'blur(4px)',
               zIndex: 100,
+              transition: 'all 0.3s ease',
             }}
           />
 
@@ -184,23 +189,25 @@ export function AssetDetailModal({
                 width: '100%',
                 maxWidth: 560,
                 maxHeight: 'calc(100vh - 48px)',
-                backgroundColor: '#ffffff',
+                backgroundColor: theme.colors.card,
                 borderRadius: 16,
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
                 pointerEvents: 'auto',
+                transition: 'all 0.3s ease',
               }}
             >
             {/* Header */}
             <div style={{
               padding: '20px 24px',
-              borderBottom: '1px solid #e5e5eb',
+              borderBottom: `1px solid ${theme.colors.border}`,
               display: 'flex',
               alignItems: 'flex-start',
               justifyContent: 'space-between',
               gap: 16,
+              transition: 'all 0.3s ease',
             }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
@@ -226,31 +233,17 @@ export function AssetDetailModal({
                         borderRadius: 999,
                         fontSize: 12,
                         fontWeight: 600,
-                        background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
-                        color: '#fff',
+                        background: `linear-gradient(135deg, ${theme.colors.primary} 0%, ${theme.colors.accent} 100%)`,
+                        color: theme.colors.textInverse,
                         display: 'flex',
                         alignItems: 'center',
                         gap: 5,
-                        boxShadow: '0 2px 4px rgba(124, 58, 237, 0.3)',
+                        boxShadow: `0 2px 4px ${theme.colors.primaryLight}`,
                       }}
                     >
                       <UserCheck style={{ width: 12, height: 12 }} />
                       {isClaimedByMe ? 'Claimed by you' : `Claimed by ${claimerName.split('@')[0]}`}
                     </motion.span>
-                  )}
-
-                  {/* Days until auto-delete badge for implemented */}
-                  {daysLeft !== null && (
-                    <span style={{
-                      padding: '4px 10px',
-                      borderRadius: 999,
-                      fontSize: 12,
-                      fontWeight: 500,
-                      backgroundColor: daysLeft <= 2 ? 'rgba(220, 38, 38, 0.15)' : 'rgba(107, 114, 128, 0.15)',
-                      color: daysLeft <= 2 ? '#dc2626' : '#6b7280',
-                    }}>
-                      {daysLeft === 0 ? 'Deleting soon' : `Auto-deletes in ${daysLeft}d`}
-                    </span>
                   )}
 
                   {/* Category badge */}
@@ -289,21 +282,21 @@ export function AssetDetailModal({
                     </span>
                   )}
 
-                  {/* Sprint badge */}
-                  {activeSprint && (
+                  {/* Goal badge */}
+                  {activeGoal && (
                     <span style={{
                       padding: '4px 10px',
                       borderRadius: 999,
                       fontSize: 12,
                       fontWeight: 500,
-                      backgroundColor: `${SPRINT_STATUSES[activeSprint.status].color}20`,
-                      color: SPRINT_STATUSES[activeSprint.status].color,
+                      backgroundColor: `${GOAL_STATUSES[activeGoal.status].color}20`,
+                      color: GOAL_STATUSES[activeGoal.status].color,
                       display: 'flex',
                       alignItems: 'center',
                       gap: 5,
                     }}>
-                      <Zap style={{ width: 12, height: 12 }} />
-                      {activeSprint.name}
+                      <Target style={{ width: 12, height: 12 }} />
+                      {activeGoal.name}
                     </span>
                   )}
                 </div>
@@ -316,27 +309,29 @@ export function AssetDetailModal({
                     style={{
                       fontSize: 20,
                       fontWeight: 600,
-                      color: '#1e1e2e',
+                      color: theme.colors.text,
                       margin: 0,
                       lineHeight: 1.3,
                       width: '100%',
                       padding: '8px 12px',
                       borderRadius: 8,
-                      border: '1px solid #e5e5eb',
-                      backgroundColor: '#f9fafb',
+                      border: `1px solid ${theme.colors.inputBorder}`,
+                      backgroundColor: theme.colors.inputBg,
                       outline: 'none',
+                      transition: 'all 0.3s ease',
                     }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
+                    onFocus={(e) => e.currentTarget.style.borderColor = theme.colors.primary}
+                    onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.inputBorder}
                     placeholder="Task name"
                   />
                 ) : (
                   <h2 style={{
                     fontSize: 22,
                     fontWeight: 600,
-                    color: '#1e1e2e',
+                    color: theme.colors.text,
                     margin: 0,
                     lineHeight: 1.3,
+                    transition: 'all 0.3s ease',
                   }}>
                     {asset.name}
                   </h2>
@@ -356,17 +351,17 @@ export function AssetDetailModal({
                       borderRadius: 8,
                       border: 'none',
                       backgroundColor: 'transparent',
-                      color: '#9ca3af',
+                      color: theme.colors.textMuted,
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
                     }}
                     onMouseOver={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(124, 58, 237, 0.1)';
-                      e.currentTarget.style.color = '#7c3aed';
+                      e.currentTarget.style.backgroundColor = theme.colors.primaryLight;
+                      e.currentTarget.style.color = theme.colors.primary;
                     }}
                     onMouseOut={(e) => {
                       e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = '#9ca3af';
+                      e.currentTarget.style.color = theme.colors.textMuted;
                     }}
                     title="Edit task"
                   >
@@ -384,8 +379,9 @@ export function AssetDetailModal({
                     borderRadius: 8,
                     border: 'none',
                     backgroundColor: 'transparent',
-                    color: '#9ca3af',
+                    color: theme.colors.textMuted,
                     cursor: 'pointer',
+                    transition: 'all 0.3s ease',
                   }}
                 >
                   <X style={{ width: 20, height: 20 }} />
@@ -404,11 +400,12 @@ export function AssetDetailModal({
                 <h3 style={{
                   fontSize: 13,
                   fontWeight: 600,
-                  color: '#6b7280',
+                  color: theme.colors.textMuted,
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
                   marginBottom: 8,
                   margin: '0 0 8px 0',
+                  transition: 'all 0.3s ease',
                 }}>
                   Description
                 </h3>
@@ -434,32 +431,34 @@ export function AssetDetailModal({
                       maxHeight: 400,
                       padding: 16,
                       fontSize: 14,
-                      color: '#4b5563',
+                      color: theme.colors.textSecondary,
                       lineHeight: 1.6,
                       borderRadius: 10,
-                      border: '1px solid #e5e5eb',
-                      backgroundColor: '#f9fafb',
+                      border: `1px solid ${theme.colors.inputBorder}`,
+                      backgroundColor: theme.colors.inputBg,
                       resize: 'none',
                       outline: 'none',
                       fontFamily: 'inherit',
                       boxSizing: 'border-box',
                       overflowY: 'auto',
+                      transition: 'all 0.3s ease',
                     }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
+                    onFocus={(e) => e.currentTarget.style.borderColor = theme.colors.primary}
+                    onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.inputBorder}
                     placeholder="Add a description..."
                   />
                 ) : (
                   <div style={{
-                    backgroundColor: '#f9fafb',
+                    backgroundColor: theme.colors.inputBg,
                     borderRadius: 10,
                     padding: 16,
                     maxHeight: 200,
                     overflow: 'auto',
+                    transition: 'all 0.3s ease',
                   }}>
                     <p style={{
                       fontSize: 14,
-                      color: '#4b5563',
+                      color: theme.colors.textSecondary,
                       lineHeight: 1.6,
                       margin: 0,
                       whiteSpace: 'pre-wrap',
@@ -478,10 +477,11 @@ export function AssetDetailModal({
                     <h3 style={{
                       fontSize: 13,
                       fontWeight: 600,
-                      color: '#6b7280',
+                      color: theme.colors.textMuted,
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
                       margin: '0 0 8px 0',
+                      transition: 'all 0.3s ease',
                     }}>
                       Category
                     </h3>
@@ -493,16 +493,17 @@ export function AssetDetailModal({
                           width: '100%',
                           padding: '10px 36px 10px 14px',
                           borderRadius: 8,
-                          border: '1px solid #e5e5eb',
-                          backgroundColor: '#f9fafb',
-                          color: editCategory ? '#1e1e2e' : '#9ca3af',
+                          border: `1px solid ${theme.colors.inputBorder}`,
+                          backgroundColor: theme.colors.inputBg,
+                          color: editCategory ? theme.colors.text : theme.colors.textMuted,
                           appearance: 'none',
                           cursor: 'pointer',
                           fontSize: 14,
                           outline: 'none',
+                          transition: 'all 0.3s ease',
                         }}
-                        onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
-                        onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
+                        onFocus={(e) => e.currentTarget.style.borderColor = theme.colors.primary}
+                        onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.inputBorder}
                       >
                         <option value="">No category</option>
                         {Object.entries(ASSET_CATEGORIES).map(([key, val]) => (
@@ -516,7 +517,7 @@ export function AssetDetailModal({
                         transform: 'translateY(-50%)',
                         width: 16,
                         height: 16,
-                        color: '#9ca3af',
+                        color: theme.colors.textMuted,
                         pointerEvents: 'none'
                       }} />
                     </div>
@@ -527,10 +528,11 @@ export function AssetDetailModal({
                     <h3 style={{
                       fontSize: 13,
                       fontWeight: 600,
-                      color: '#6b7280',
+                      color: theme.colors.textMuted,
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
                       margin: '0 0 8px 0',
+                      transition: 'all 0.3s ease',
                     }}>
                       Priority
                     </h3>
@@ -542,16 +544,17 @@ export function AssetDetailModal({
                           width: '100%',
                           padding: '10px 36px 10px 14px',
                           borderRadius: 8,
-                          border: '1px solid #e5e5eb',
-                          backgroundColor: '#f9fafb',
-                          color: editPriority ? '#1e1e2e' : '#9ca3af',
+                          border: `1px solid ${theme.colors.inputBorder}`,
+                          backgroundColor: theme.colors.inputBg,
+                          color: editPriority ? theme.colors.text : theme.colors.textMuted,
                           appearance: 'none',
                           cursor: 'pointer',
                           fontSize: 14,
                           outline: 'none',
+                          transition: 'all 0.3s ease',
                         }}
-                        onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
-                        onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
+                        onFocus={(e) => e.currentTarget.style.borderColor = theme.colors.primary}
+                        onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.inputBorder}
                       >
                         <option value="">No priority</option>
                         {Object.entries(ASSET_PRIORITIES).map(([key, val]) => (
@@ -565,7 +568,7 @@ export function AssetDetailModal({
                         transform: 'translateY(-50%)',
                         width: 16,
                         height: 16,
-                        color: '#9ca3af',
+                        color: theme.colors.textMuted,
                         pointerEvents: 'none'
                       }} />
                     </div>
@@ -576,13 +579,14 @@ export function AssetDetailModal({
                     <h3 style={{
                       fontSize: 13,
                       fontWeight: 600,
-                      color: '#6b7280',
+                      color: theme.colors.textMuted,
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
                       margin: '0 0 8px 0',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 6,
+                      transition: 'all 0.3s ease',
                     }}>
                       <CalendarDays style={{ width: 14, height: 14 }} />
                       ETA Date
@@ -595,17 +599,18 @@ export function AssetDetailModal({
                         width: '100%',
                         padding: '10px 14px',
                         borderRadius: 8,
-                        border: '1px solid #e5e5eb',
-                        backgroundColor: '#f9fafb',
-                        color: editEtaDate ? '#1e1e2e' : '#9ca3af',
+                        border: `1px solid ${theme.colors.inputBorder}`,
+                        backgroundColor: theme.colors.inputBg,
+                        color: editEtaDate ? theme.colors.text : theme.colors.textMuted,
                         fontSize: 14,
                         outline: 'none',
                         boxSizing: 'border-box',
+                        transition: 'all 0.3s ease',
                       }}
-                      onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
-                      onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
+                      onFocus={(e) => e.currentTarget.style.borderColor = theme.colors.primary}
+                      onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.inputBorder}
                     />
-                    <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 4, margin: '4px 0 0 0' }}>
+                    <p style={{ fontSize: 11, color: theme.colors.textMuted, marginTop: 4, margin: '4px 0 0 0' }}>
                       Creates a deliverable on schedule
                     </p>
                   </div>
@@ -620,134 +625,91 @@ export function AssetDetailModal({
               }}>
                 {/* Created by */}
                 <div style={{
-                  backgroundColor: '#f9fafb',
+                  backgroundColor: theme.colors.inputBg,
                   borderRadius: 10,
                   padding: 14,
+                  transition: 'all 0.3s ease',
                 }}>
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
                     marginBottom: 6,
-                    color: '#9ca3af',
+                    color: theme.colors.textMuted,
                   }}>
                     <User style={{ width: 14, height: 14 }} />
                     <span style={{ fontSize: 12, fontWeight: 500 }}>Created by</span>
                   </div>
-                  <p style={{ fontSize: 14, color: '#1e1e2e', fontWeight: 500, margin: 0 }}>
+                  <p style={{ fontSize: 14, color: theme.colors.text, fontWeight: 500, margin: 0 }}>
                     {creatorName}
                   </p>
                 </div>
 
                 {/* Created at */}
                 <div style={{
-                  backgroundColor: '#f9fafb',
+                  backgroundColor: theme.colors.inputBg,
                   borderRadius: 10,
                   padding: 14,
+                  transition: 'all 0.3s ease',
                 }}>
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
                     marginBottom: 6,
-                    color: '#9ca3af',
+                    color: theme.colors.textMuted,
                   }}>
                     <Clock style={{ width: 14, height: 14 }} />
                     <span style={{ fontSize: 12, fontWeight: 500 }}>Created</span>
                   </div>
-                  <p style={{ fontSize: 14, color: '#1e1e2e', fontWeight: 500, margin: 0 }}>
+                  <p style={{ fontSize: 14, color: theme.colors.text, fontWeight: 500, margin: 0 }}>
                     {formatFullDate(asset.created_at)}
                   </p>
                 </div>
 
                 {/* Completed info */}
-                {(asset.status === "completed" || asset.status === "implemented") && asset.completer && (
+                {asset.status === "completed" && asset.completer && (
                   <>
                     <div style={{
-                      backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                      backgroundColor: theme.colors.infoBg,
                       borderRadius: 10,
                       padding: 14,
+                      transition: 'all 0.3s ease',
                     }}>
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: 8,
                         marginBottom: 6,
-                        color: '#2563eb',
+                        color: theme.colors.info,
                       }}>
                         <CheckCircle2 style={{ width: 14, height: 14 }} />
                         <span style={{ fontSize: 12, fontWeight: 500 }}>Completed by</span>
                       </div>
-                      <p style={{ fontSize: 14, color: '#1e1e2e', fontWeight: 500, margin: 0 }}>
+                      <p style={{ fontSize: 14, color: theme.colors.text, fontWeight: 500, margin: 0 }}>
                         {asset.completer.display_name || asset.completer.email}
                       </p>
                     </div>
 
                     {asset.completed_at && (
                       <div style={{
-                        backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                        backgroundColor: theme.colors.infoBg,
                         borderRadius: 10,
                         padding: 14,
+                        transition: 'all 0.3s ease',
                       }}>
                         <div style={{
                           display: 'flex',
                           alignItems: 'center',
                           gap: 8,
                           marginBottom: 6,
-                          color: '#2563eb',
+                          color: theme.colors.info,
                         }}>
                           <Clock style={{ width: 14, height: 14 }} />
                           <span style={{ fontSize: 12, fontWeight: 500 }}>Completed on</span>
                         </div>
-                        <p style={{ fontSize: 14, color: '#1e1e2e', fontWeight: 500, margin: 0 }}>
+                        <p style={{ fontSize: 14, color: theme.colors.text, fontWeight: 500, margin: 0 }}>
                           {formatFullDate(asset.completed_at)}
-                        </p>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Implemented info */}
-                {asset.status === "implemented" && asset.implementer && (
-                  <>
-                    <div style={{
-                      backgroundColor: 'rgba(22, 163, 74, 0.08)',
-                      borderRadius: 10,
-                      padding: 14,
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        marginBottom: 6,
-                        color: '#16a34a',
-                      }}>
-                        <Archive style={{ width: 14, height: 14 }} />
-                        <span style={{ fontSize: 12, fontWeight: 500 }}>Implemented by</span>
-                      </div>
-                      <p style={{ fontSize: 14, color: '#1e1e2e', fontWeight: 500, margin: 0 }}>
-                        {asset.implementer.display_name || asset.implementer.email}
-                      </p>
-                    </div>
-
-                    {asset.implemented_at && (
-                      <div style={{
-                        backgroundColor: 'rgba(22, 163, 74, 0.08)',
-                        borderRadius: 10,
-                        padding: 14,
-                      }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          marginBottom: 6,
-                          color: '#16a34a',
-                        }}>
-                          <Clock style={{ width: 14, height: 14 }} />
-                          <span style={{ fontSize: 12, fontWeight: 500 }}>Implemented on</span>
-                        </div>
-                        <p style={{ fontSize: 14, color: '#1e1e2e', fontWeight: 500, margin: 0 }}>
-                          {formatFullDate(asset.implemented_at)}
                         </p>
                       </div>
                     )}
@@ -761,10 +723,11 @@ export function AssetDetailModal({
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       style={{
-                        backgroundColor: 'rgba(124, 58, 237, 0.08)',
+                        backgroundColor: theme.colors.claimedBg,
                         borderRadius: 10,
                         padding: 14,
-                        border: '1px solid rgba(124, 58, 237, 0.15)',
+                        border: `1px solid ${theme.colors.primaryLight}`,
+                        transition: 'all 0.3s ease',
                       }}
                     >
                       <div style={{
@@ -772,12 +735,12 @@ export function AssetDetailModal({
                         alignItems: 'center',
                         gap: 8,
                         marginBottom: 6,
-                        color: '#7c3aed',
+                        color: theme.colors.primary,
                       }}>
                         <UserCheck style={{ width: 14, height: 14 }} />
                         <span style={{ fontSize: 12, fontWeight: 500 }}>Claimed by</span>
                       </div>
-                      <p style={{ fontSize: 14, color: '#1e1e2e', fontWeight: 500, margin: 0 }}>
+                      <p style={{ fontSize: 14, color: theme.colors.text, fontWeight: 500, margin: 0 }}>
                         {asset.claimer.display_name || asset.claimer.email}
                       </p>
                     </motion.div>
@@ -788,10 +751,11 @@ export function AssetDetailModal({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.05 }}
                         style={{
-                          backgroundColor: 'rgba(124, 58, 237, 0.08)',
+                          backgroundColor: theme.colors.claimedBg,
                           borderRadius: 10,
                           padding: 14,
-                          border: '1px solid rgba(124, 58, 237, 0.15)',
+                          border: `1px solid ${theme.colors.primaryLight}`,
+                          transition: 'all 0.3s ease',
                         }}
                       >
                         <div style={{
@@ -799,16 +763,55 @@ export function AssetDetailModal({
                           alignItems: 'center',
                           gap: 8,
                           marginBottom: 6,
-                          color: '#7c3aed',
+                          color: theme.colors.primary,
                         }}>
                           <Clock style={{ width: 14, height: 14 }} />
                           <span style={{ fontSize: 12, fontWeight: 500 }}>Claimed on</span>
                         </div>
-                        <p style={{ fontSize: 14, color: '#1e1e2e', fontWeight: 500, margin: 0 }}>
+                        <p style={{ fontSize: 14, color: theme.colors.text, fontWeight: 500, margin: 0 }}>
                           {formatFullDate(asset.claimed_at)}
                         </p>
                       </motion.div>
                     )}
+                  </>
+                )}
+
+                {/* Blocked info */}
+                {asset.status === "blocked" && asset.blocker && (
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      style={{
+                        backgroundColor: 'rgba(75, 0, 130, 0.08)',
+                        borderRadius: 10,
+                        padding: 14,
+                        border: '1px solid rgba(75, 0, 130, 0.2)',
+                        gridColumn: '1 / -1',
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        marginBottom: 6,
+                        color: '#4b0082',
+                      }}>
+                        <ShieldAlert style={{ width: 14, height: 14 }} />
+                        <span style={{ fontSize: 12, fontWeight: 500 }}>Blocked by {asset.blocker.display_name || asset.blocker.email}</span>
+                      </div>
+                      {asset.blocked_reason && (
+                        <p style={{ fontSize: 14, color: theme.colors.text, fontWeight: 400, margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                          {asset.blocked_reason}
+                        </p>
+                      )}
+                      {asset.blocked_at && (
+                        <p style={{ fontSize: 12, color: theme.colors.textMuted, margin: '8px 0 0 0' }}>
+                          {formatFullDate(asset.blocked_at)}
+                        </p>
+                      )}
+                    </motion.div>
                   </>
                 )}
               </div>
@@ -818,13 +821,14 @@ export function AssetDetailModal({
                 <h3 style={{
                   fontSize: 13,
                   fontWeight: 600,
-                  color: '#6b7280',
+                  color: theme.colors.textMuted,
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
                   margin: '0 0 12px 0',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
+                  transition: 'all 0.3s ease',
                 }}>
                   <MessageCircle style={{ width: 14, height: 14 }} />
                   Updates ({comments.length})
@@ -841,7 +845,7 @@ export function AssetDetailModal({
                     <div style={{
                       padding: 16,
                       textAlign: 'center',
-                      color: '#9ca3af',
+                      color: theme.colors.textMuted,
                       fontSize: 14,
                     }}>
                       Loading updates...
@@ -850,11 +854,12 @@ export function AssetDetailModal({
                     <div style={{
                       padding: 20,
                       textAlign: 'center',
-                      color: '#9ca3af',
+                      color: theme.colors.textMuted,
                       fontSize: 14,
-                      backgroundColor: '#f9fafb',
+                      backgroundColor: theme.colors.inputBg,
                       borderRadius: 10,
-                      border: '1px dashed #e5e5eb',
+                      border: `1px dashed ${theme.colors.border}`,
+                      transition: 'all 0.3s ease',
                     }}>
                       No updates yet. Add one to track progress.
                     </div>
@@ -868,10 +873,11 @@ export function AssetDetailModal({
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           style={{
-                            backgroundColor: '#f9fafb',
+                            backgroundColor: theme.colors.inputBg,
                             borderRadius: 10,
                             padding: 14,
-                            border: '1px solid #e5e5eb',
+                            border: `1px solid ${theme.colors.border}`,
+                            transition: 'all 0.3s ease',
                           }}
                         >
                           <div style={{
@@ -889,11 +895,11 @@ export function AssetDetailModal({
                                 width: 28,
                                 height: 28,
                                 borderRadius: '50%',
-                                backgroundColor: '#7c3aed',
+                                backgroundColor: theme.colors.primary,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: '#fff',
+                                color: theme.colors.textInverse,
                                 fontSize: 12,
                                 fontWeight: 600,
                               }}>
@@ -903,13 +909,13 @@ export function AssetDetailModal({
                                 <span style={{
                                   fontSize: 13,
                                   fontWeight: 600,
-                                  color: '#1e1e2e',
+                                  color: theme.colors.text,
                                 }}>
                                   {authorName}
                                 </span>
                                 <span style={{
                                   fontSize: 12,
-                                  color: '#9ca3af',
+                                  color: theme.colors.textMuted,
                                   marginLeft: 8,
                                 }}>
                                   {formatCommentDate(comment.created_at)}
@@ -928,17 +934,17 @@ export function AssetDetailModal({
                                   borderRadius: 6,
                                   border: 'none',
                                   backgroundColor: 'transparent',
-                                  color: '#9ca3af',
+                                  color: theme.colors.textMuted,
                                   cursor: 'pointer',
                                   transition: 'all 0.15s ease',
                                 }}
                                 onMouseOver={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-                                  e.currentTarget.style.color = '#ef4444';
+                                  e.currentTarget.style.backgroundColor = theme.colors.errorBg;
+                                  e.currentTarget.style.color = theme.colors.error;
                                 }}
                                 onMouseOut={(e) => {
                                   e.currentTarget.style.backgroundColor = 'transparent';
-                                  e.currentTarget.style.color = '#9ca3af';
+                                  e.currentTarget.style.color = theme.colors.textMuted;
                                 }}
                                 title="Delete update"
                               >
@@ -948,7 +954,7 @@ export function AssetDetailModal({
                           </div>
                           <p style={{
                             fontSize: 14,
-                            color: '#4b5563',
+                            color: theme.colors.textSecondary,
                             lineHeight: 1.5,
                             margin: 0,
                             whiteSpace: 'pre-wrap',
@@ -981,13 +987,15 @@ export function AssetDetailModal({
                       flex: 1,
                       padding: '10px 14px',
                       borderRadius: 8,
-                      border: '1px solid #e5e5eb',
-                      backgroundColor: '#fff',
+                      border: `1px solid ${theme.colors.inputBorder}`,
+                      backgroundColor: theme.colors.card,
+                      color: theme.colors.text,
                       fontSize: 14,
                       outline: 'none',
+                      transition: 'all 0.3s ease',
                     }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
+                    onFocus={(e) => e.currentTarget.style.borderColor = theme.colors.primary}
+                    onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.inputBorder}
                   />
                   <button
                     onClick={handleAddComment}
@@ -999,8 +1007,8 @@ export function AssetDetailModal({
                       padding: '10px 16px',
                       borderRadius: 8,
                       border: 'none',
-                      backgroundColor: newComment.trim() ? '#7c3aed' : '#e5e5eb',
-                      color: newComment.trim() ? '#fff' : '#9ca3af',
+                      backgroundColor: newComment.trim() ? theme.colors.primary : theme.colors.border,
+                      color: newComment.trim() ? theme.colors.textInverse : theme.colors.textMuted,
                       fontSize: 14,
                       fontWeight: 500,
                       cursor: newComment.trim() ? 'pointer' : 'not-allowed',
@@ -1019,11 +1027,12 @@ export function AssetDetailModal({
             {isEditing ? (
               <div style={{
                 padding: '16px 24px',
-                borderTop: '1px solid #e5e5eb',
-                backgroundColor: '#fafafa',
+                borderTop: `1px solid ${theme.colors.border}`,
+                backgroundColor: theme.colors.backgroundSecondary,
                 display: 'flex',
                 gap: 12,
                 justifyContent: 'flex-end',
+                transition: 'all 0.3s ease',
               }}>
                 <button
                   onClick={handleCancel}
@@ -1033,12 +1042,13 @@ export function AssetDetailModal({
                     justifyContent: 'center',
                     padding: '12px 24px',
                     borderRadius: 10,
-                    border: '1px solid #e5e5eb',
-                    backgroundColor: '#fff',
-                    color: '#6b7280',
+                    border: `1px solid ${theme.colors.border}`,
+                    backgroundColor: theme.colors.card,
+                    color: theme.colors.textMuted,
                     fontSize: 14,
                     fontWeight: 500,
                     cursor: 'pointer',
+                    transition: 'all 0.3s ease',
                   }}
                 >
                   Cancel
@@ -1053,27 +1063,92 @@ export function AssetDetailModal({
                     padding: '12px 24px',
                     borderRadius: 10,
                     border: 'none',
-                    backgroundColor: editName.trim() ? '#7c3aed' : '#d1d5db',
-                    color: '#fff',
+                    backgroundColor: editName.trim() ? theme.colors.primary : theme.colors.border,
+                    color: theme.colors.textInverse,
                     fontSize: 14,
                     fontWeight: 600,
                     cursor: editName.trim() ? 'pointer' : 'not-allowed',
+                    transition: 'all 0.3s ease',
                   }}
                 >
                   Save Changes
                 </button>
               </div>
-            ) : (onMarkInProgress || onMarkCompleted || onMarkImplemented || onMoveToPending || onMoveToInProgress || onMoveToCompleted || onClaim || onUnclaim) && (
+            ) : (onMarkInProgress || onMarkCompleted || onMarkBlocked || onMoveToPending || onMoveToInProgress || onUnblock || onClaim || onUnclaim) && (
               <div style={{
                 padding: '16px 24px',
-                borderTop: '1px solid #e5e5eb',
-                backgroundColor: '#fafafa',
+                borderTop: `1px solid ${theme.colors.border}`,
+                backgroundColor: theme.colors.backgroundSecondary,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 12,
+                transition: 'all 0.3s ease',
               }}>
+                {/* Block/Unblock button row */}
+                {(onMarkBlocked || onUnblock) && asset.status !== "blocked" && (
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setShowBlockModal(true)}
+                      disabled={isTransitioning}
+                      style={{
+                        flex: 1,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '12px 20px',
+                        borderRadius: 10,
+                        border: '2px solid rgba(75, 0, 130, 0.3)',
+                        backgroundColor: 'rgba(75, 0, 130, 0.08)',
+                        color: '#4b0082',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        cursor: isTransitioning ? 'not-allowed' : 'pointer',
+                        opacity: isTransitioning ? 0.7 : 1,
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <ShieldAlert style={{ marginRight: 8, width: 18, height: 18 }} />
+                      Mark as Blocked
+                    </motion.button>
+                  </div>
+                )}
+
+                {/* Unblock button for blocked tasks */}
+                {onUnblock && asset.status === "blocked" && (
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => onUnblock(asset.id)}
+                      disabled={isTransitioning}
+                      style={{
+                        flex: 1,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '12px 20px',
+                        borderRadius: 10,
+                        border: 'none',
+                        background: `linear-gradient(135deg, ${theme.colors.success} 0%, #22c55e 100%)`,
+                        color: theme.colors.textInverse,
+                        fontSize: 14,
+                        fontWeight: 600,
+                        cursor: isTransitioning ? 'not-allowed' : 'pointer',
+                        opacity: isTransitioning ? 0.7 : 1,
+                        boxShadow: `0 4px 12px ${theme.colors.successBg}`,
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <ShieldOff style={{ marginRight: 8, width: 18, height: 18 }} />
+                      Unblock Task
+                    </motion.button>
+                  </div>
+                )}
+
                 {/* Claim/Unclaim button row */}
-                {(onClaim || onUnclaim) && (
+                {(onClaim || onUnclaim) && asset.status !== "blocked" && (
                   <div style={{ display: 'flex', gap: 12 }}>
                     {!isClaimed && onClaim && (
                       <motion.button
@@ -1089,13 +1164,13 @@ export function AssetDetailModal({
                           padding: '12px 20px',
                           borderRadius: 10,
                           border: 'none',
-                          background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
-                          color: '#fff',
+                          background: `linear-gradient(135deg, ${theme.colors.primary} 0%, ${theme.colors.accent} 100%)`,
+                          color: theme.colors.textInverse,
                           fontSize: 14,
                           fontWeight: 600,
                           cursor: isTransitioning ? 'not-allowed' : 'pointer',
                           opacity: isTransitioning ? 0.7 : 1,
-                          boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)',
+                          boxShadow: `0 4px 12px ${theme.colors.primaryLight}`,
                           transition: 'all 0.2s ease',
                         }}
                       >
@@ -1116,9 +1191,9 @@ export function AssetDetailModal({
                           justifyContent: 'center',
                           padding: '12px 20px',
                           borderRadius: 10,
-                          border: '2px solid rgba(124, 58, 237, 0.3)',
-                          backgroundColor: 'rgba(124, 58, 237, 0.08)',
-                          color: '#7c3aed',
+                          border: `2px solid ${theme.colors.primaryLight}`,
+                          backgroundColor: theme.colors.primaryLighter,
+                          color: theme.colors.primary,
                           fontSize: 14,
                           fontWeight: 600,
                           cursor: isTransitioning ? 'not-allowed' : 'pointer',
@@ -1138,10 +1213,11 @@ export function AssetDetailModal({
                         justifyContent: 'center',
                         padding: '12px 20px',
                         borderRadius: 10,
-                        backgroundColor: 'rgba(124, 58, 237, 0.08)',
-                        color: '#7c3aed',
+                        backgroundColor: theme.colors.primaryLighter,
+                        color: theme.colors.primary,
                         fontSize: 14,
                         fontWeight: 500,
+                        transition: 'all 0.3s ease',
                       }}>
                         <UserCheck style={{ marginRight: 8, width: 16, height: 16 }} />
                         Claimed by {claimerName.split('@')[0]}
@@ -1150,10 +1226,10 @@ export function AssetDetailModal({
                   </div>
                 )}
 
-                {/* Status action buttons */}
+                {/* Status action buttons - only show buttons appropriate for current status */}
                 <div style={{ display: 'flex', gap: 12 }}>
-                {/* Back buttons */}
-                {onMoveToPending && (
+                {/* Back buttons - move task to earlier workflow stages */}
+                {onMoveToPending && asset.status && asset.status !== "pending" && asset.status !== "blocked" && (
                   <button
                     onClick={() => onMoveToPending(asset.id)}
                     disabled={isTransitioning}
@@ -1164,13 +1240,14 @@ export function AssetDetailModal({
                       justifyContent: 'center',
                       padding: '12px 20px',
                       borderRadius: 10,
-                      border: '1px solid #e5e5eb',
-                      backgroundColor: '#fff',
-                      color: '#6b7280',
+                      border: `1px solid ${theme.colors.border}`,
+                      backgroundColor: theme.colors.card,
+                      color: theme.colors.textMuted,
                       fontSize: 14,
                       fontWeight: 500,
                       cursor: isTransitioning ? 'not-allowed' : 'pointer',
                       opacity: isTransitioning ? 0.7 : 1,
+                      transition: 'all 0.3s ease',
                     }}
                   >
                     <ArrowLeft style={{ marginRight: 8, width: 16, height: 16 }} />
@@ -1178,7 +1255,7 @@ export function AssetDetailModal({
                   </button>
                 )}
 
-                {onMoveToInProgress && (
+                {onMoveToInProgress && asset.status && asset.status === "completed" && (
                   <button
                     onClick={() => onMoveToInProgress(asset.id)}
                     disabled={isTransitioning}
@@ -1189,13 +1266,14 @@ export function AssetDetailModal({
                       justifyContent: 'center',
                       padding: '12px 20px',
                       borderRadius: 10,
-                      border: '1px solid #e5e5eb',
-                      backgroundColor: '#fff',
-                      color: '#6b7280',
+                      border: `1px solid ${theme.colors.border}`,
+                      backgroundColor: theme.colors.card,
+                      color: theme.colors.textMuted,
                       fontSize: 14,
                       fontWeight: 500,
                       cursor: isTransitioning ? 'not-allowed' : 'pointer',
                       opacity: isTransitioning ? 0.7 : 1,
+                      transition: 'all 0.3s ease',
                     }}
                   >
                     <ArrowLeft style={{ marginRight: 8, width: 16, height: 16 }} />
@@ -1203,33 +1281,8 @@ export function AssetDetailModal({
                   </button>
                 )}
 
-                {onMoveToCompleted && (
-                  <button
-                    onClick={() => onMoveToCompleted(asset.id)}
-                    disabled={isTransitioning}
-                    style={{
-                      flex: 1,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '12px 20px',
-                      borderRadius: 10,
-                      border: '1px solid #e5e5eb',
-                      backgroundColor: '#fff',
-                      color: '#6b7280',
-                      fontSize: 14,
-                      fontWeight: 500,
-                      cursor: isTransitioning ? 'not-allowed' : 'pointer',
-                      opacity: isTransitioning ? 0.7 : 1,
-                    }}
-                  >
-                    <ArrowLeft style={{ marginRight: 8, width: 16, height: 16 }} />
-                    Back to Completed
-                  </button>
-                )}
-
                 {/* Forward buttons */}
-                {onMarkInProgress && (
+                {onMarkInProgress && asset.status && asset.status === "pending" && (
                   <button
                     onClick={() => onMarkInProgress(asset.id)}
                     disabled={isTransitioning}
@@ -1241,12 +1294,13 @@ export function AssetDetailModal({
                       padding: '12px 20px',
                       borderRadius: 10,
                       border: 'none',
-                      backgroundColor: isTransitioning ? '#c4b5fd' : '#7c3aed',
-                      color: '#fff',
+                      backgroundColor: isTransitioning ? theme.colors.accent : theme.colors.primary,
+                      color: theme.colors.textInverse,
                       fontSize: 14,
                       fontWeight: 600,
                       cursor: isTransitioning ? 'not-allowed' : 'pointer',
                       opacity: isTransitioning ? 0.7 : 1,
+                      transition: 'all 0.3s ease',
                     }}
                   >
                     Start Working
@@ -1254,7 +1308,7 @@ export function AssetDetailModal({
                   </button>
                 )}
 
-                {onMarkCompleted && (
+                {onMarkCompleted && asset.status && asset.status === "in_progress" && (
                   <button
                     onClick={() => onMarkCompleted(asset.id)}
                     disabled={isTransitioning}
@@ -1266,43 +1320,17 @@ export function AssetDetailModal({
                       padding: '12px 20px',
                       borderRadius: 10,
                       border: 'none',
-                      backgroundColor: isTransitioning ? '#93c5fd' : '#3b82f6',
-                      color: '#fff',
+                      backgroundColor: isTransitioning ? theme.colors.accent : theme.colors.success,
+                      color: theme.colors.textInverse,
                       fontSize: 14,
                       fontWeight: 600,
                       cursor: isTransitioning ? 'not-allowed' : 'pointer',
                       opacity: isTransitioning ? 0.7 : 1,
+                      transition: 'all 0.3s ease',
                     }}
                   >
                     <CheckCircle2 style={{ marginRight: 8, width: 16, height: 16 }} />
                     Mark Completed
-                    <ArrowRight style={{ marginLeft: 8, width: 16, height: 16 }} />
-                  </button>
-                )}
-
-                {onMarkImplemented && (
-                  <button
-                    onClick={() => onMarkImplemented(asset.id)}
-                    disabled={isTransitioning}
-                    style={{
-                      flex: 1,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '12px 20px',
-                      borderRadius: 10,
-                      border: 'none',
-                      backgroundColor: isTransitioning ? '#86efac' : '#16a34a',
-                      color: '#fff',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      cursor: isTransitioning ? 'not-allowed' : 'pointer',
-                      opacity: isTransitioning ? 0.7 : 1,
-                    }}
-                  >
-                    <Archive style={{ marginRight: 8, width: 16, height: 16 }} />
-                    Mark Implemented
-                    <ArrowRight style={{ marginLeft: 8, width: 16, height: 16 }} />
                   </button>
                 )}
                 </div>
@@ -1310,6 +1338,159 @@ export function AssetDetailModal({
             )}
             </motion.div>
           </div>
+
+          {/* Block Reason Modal */}
+          {showBlockModal && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowBlockModal(false)}
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                  zIndex: 200,
+                }}
+              />
+              <div
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 201,
+                  padding: 24,
+                  pointerEvents: 'none',
+                }}
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  style={{
+                    width: '100%',
+                    maxWidth: 440,
+                    backgroundColor: theme.colors.card,
+                    borderRadius: 16,
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                    overflow: 'hidden',
+                    pointerEvents: 'auto',
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <div style={{
+                    padding: '20px 24px',
+                    borderBottom: `1px solid ${theme.colors.border}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    transition: 'all 0.3s ease',
+                  }}>
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 10,
+                      backgroundColor: 'rgba(75, 0, 130, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <ShieldAlert style={{ width: 20, height: 20, color: '#4b0082' }} />
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: theme.colors.text }}>
+                        Block Task
+                      </h3>
+                      <p style={{ margin: 0, fontSize: 13, color: theme.colors.textMuted }}>
+                        Provide a reason for blocking this task
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ padding: 24 }}>
+                    <textarea
+                      value={blockReason}
+                      onChange={(e) => setBlockReason(e.target.value)}
+                      placeholder="Why is this task blocked? (e.g., waiting for dependencies, need clarification, external blocker)"
+                      style={{
+                        width: '100%',
+                        minHeight: 120,
+                        padding: 14,
+                        fontSize: 14,
+                        color: theme.colors.text,
+                        lineHeight: 1.5,
+                        borderRadius: 10,
+                        border: `1px solid ${theme.colors.inputBorder}`,
+                        backgroundColor: theme.colors.inputBg,
+                        resize: 'vertical',
+                        outline: 'none',
+                        fontFamily: 'inherit',
+                        boxSizing: 'border-box',
+                        transition: 'all 0.3s ease',
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#4b0082'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.inputBorder}
+                      autoFocus
+                    />
+                  </div>
+                  <div style={{
+                    padding: '16px 24px',
+                    borderTop: `1px solid ${theme.colors.border}`,
+                    backgroundColor: theme.colors.backgroundSecondary,
+                    display: 'flex',
+                    gap: 12,
+                    justifyContent: 'flex-end',
+                    transition: 'all 0.3s ease',
+                  }}>
+                    <button
+                      onClick={() => {
+                        setShowBlockModal(false);
+                        setBlockReason("");
+                      }}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: 8,
+                        border: `1px solid ${theme.colors.border}`,
+                        backgroundColor: theme.colors.card,
+                        color: theme.colors.textMuted,
+                        fontSize: 14,
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (onMarkBlocked && blockReason.trim()) {
+                          onMarkBlocked(asset.id, blockReason.trim());
+                          setShowBlockModal(false);
+                          setBlockReason("");
+                        }
+                      }}
+                      disabled={!blockReason.trim()}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: 8,
+                        border: 'none',
+                        backgroundColor: blockReason.trim() ? '#4b0082' : theme.colors.border,
+                        color: theme.colors.textInverse,
+                        fontSize: 14,
+                        fontWeight: 600,
+                        cursor: blockReason.trim() ? 'pointer' : 'not-allowed',
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      Block Task
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            </>
+          )}
         </>
       )}
     </AnimatePresence>

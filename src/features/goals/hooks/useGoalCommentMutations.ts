@@ -2,23 +2,23 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 
-interface CreateSprintCommentData {
-  sprint_id: string;
+interface CreateGoalCommentData {
+  goal_id: string;
   content: string;
 }
 
-export function useSprintCommentMutations() {
+export function useGoalCommentMutations() {
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
 
   const createComment = useMutation({
-    mutationFn: async (data: CreateSprintCommentData) => {
+    mutationFn: async (data: CreateGoalCommentData) => {
       if (!user) throw new Error("Not authenticated");
 
       const { data: comment, error } = await supabase
         .from("comments")
         .insert({
-          sprint_id: data.sprint_id,
+          goal_id: data.goal_id,
           content: data.content,
           created_by: user.id,
         })
@@ -29,22 +29,22 @@ export function useSprintCommentMutations() {
       return comment;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["sprint-comments", variables.sprint_id] });
+      queryClient.invalidateQueries({ queryKey: ["goal-comments", variables.goal_id] });
     },
   });
 
   const deleteComment = useMutation({
-    mutationFn: async ({ commentId, sprintId }: { commentId: string; sprintId: string }) => {
+    mutationFn: async ({ commentId, goalId }: { commentId: string; goalId: string }) => {
       const { error } = await supabase
         .from("comments")
         .delete()
         .eq("id", commentId);
 
       if (error) throw error;
-      return { commentId, sprintId };
+      return { commentId, goalId };
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["sprint-comments", variables.sprintId] });
+      queryClient.invalidateQueries({ queryKey: ["goal-comments", variables.goalId] });
     },
   });
 

@@ -5,6 +5,7 @@ import { useRequests, type RequestWithCreator } from "../hooks/useRequests";
 import { useRequestMutations } from "../hooks/useRequestMutations";
 import { RequestCard } from "./RequestCard";
 import { RequestDetailModal } from "./RequestDetailModal";
+import { useTheme } from "@/stores/themeStore";
 import type { ModelRequestStatus } from "@/types/database";
 
 interface RequestListProps {
@@ -12,6 +13,7 @@ interface RequestListProps {
 }
 
 export function RequestList({ status }: RequestListProps) {
+  const theme = useTheme();
   const { data: requests, isLoading, error } = useRequests({ status });
   const { acceptRequest, denyRequest, deleteRequest } = useRequestMutations();
 
@@ -68,7 +70,8 @@ export function RequestList({ status }: RequestListProps) {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '64px 24px',
-        color: '#9ca3af',
+        color: theme.colors.textMuted,
+        transition: 'all 0.3s ease',
       }}>
         <Loader2
           style={{
@@ -78,7 +81,7 @@ export function RequestList({ status }: RequestListProps) {
             animation: 'spin 1s linear infinite',
           }}
         />
-        <p style={{ margin: 0, fontSize: 14 }}>Loading requests...</p>
+        <p style={{ margin: 0, fontSize: 14, transition: 'all 0.3s ease' }}>Loading requests...</p>
       </div>
     );
   }
@@ -87,13 +90,14 @@ export function RequestList({ status }: RequestListProps) {
     return (
       <div style={{
         padding: '32px 24px',
-        backgroundColor: 'rgba(239, 68, 68, 0.08)',
+        backgroundColor: theme.colors.errorBg,
         borderRadius: 12,
-        border: '1px solid rgba(239, 68, 68, 0.2)',
-        color: '#ef4444',
+        border: `1px solid ${theme.colors.error}`,
+        color: theme.colors.error,
         textAlign: 'center',
+        transition: 'all 0.3s ease',
       }}>
-        <p style={{ margin: 0, fontSize: 14 }}>
+        <p style={{ margin: 0, fontSize: 14, transition: 'all 0.3s ease' }}>
           Failed to load requests. Please try again.
         </p>
       </div>
@@ -108,13 +112,14 @@ export function RequestList({ status }: RequestListProps) {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '64px 24px',
-        color: '#9ca3af',
+        color: theme.colors.textMuted,
+        transition: 'all 0.3s ease',
       }}>
-        <FileQuestion style={{ width: 48, height: 48, marginBottom: 16, opacity: 0.5 }} />
-        <p style={{ margin: 0, fontSize: 16, fontWeight: 500, color: '#6b7280' }}>
+        <FileQuestion style={{ width: 48, height: 48, marginBottom: 16, opacity: 0.5, transition: 'all 0.3s ease' }} />
+        <p style={{ margin: 0, fontSize: 16, fontWeight: 500, color: theme.colors.textMuted, transition: 'all 0.3s ease' }}>
           {status === "open" ? "No open requests" : "No denied requests"}
         </p>
-        <p style={{ margin: '8px 0 0 0', fontSize: 14 }}>
+        <p style={{ margin: '8px 0 0 0', fontSize: 14, transition: 'all 0.3s ease' }}>
           {status === "open"
             ? "Create a new request to get started"
             : "Denied requests will appear here for 7 days"}

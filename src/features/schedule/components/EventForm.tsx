@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Flag, Package, Tag, ChevronDown, Check, Loader2 } from "lucide-react";
 import { useAssets } from "@/features/assets/hooks/useAssets";
+import { useTheme } from "@/stores/themeStore";
 import {
   EVENT_TYPES,
   type Event,
@@ -37,6 +38,7 @@ export function EventForm({
   editingEvent,
   isLoading = false,
 }: EventFormProps) {
+  const theme = useTheme();
   const { data: assets } = useAssets();
 
   // Form state
@@ -125,13 +127,14 @@ export function EventForm({
   };
 
   const modalStyle: React.CSSProperties = {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     width: "100%",
     maxWidth: 480,
     maxHeight: "90vh",
     overflow: "hidden",
     boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+    transition: "all 0.3s ease",
   };
 
   const headerStyle: React.CSSProperties = {
@@ -139,14 +142,16 @@ export function EventForm({
     alignItems: "center",
     justifyContent: "space-between",
     padding: "20px 24px",
-    borderBottom: "1px solid #e5e5eb",
+    borderBottom: `1px solid ${theme.colors.border}`,
+    transition: "all 0.3s ease",
   };
 
   const titleStyle: React.CSSProperties = {
     fontSize: 18,
     fontWeight: 600,
-    color: "#1e1e2e",
+    color: theme.colors.text,
     margin: 0,
+    transition: "all 0.3s ease",
   };
 
   const closeButtonStyle: React.CSSProperties = {
@@ -158,9 +163,9 @@ export function EventForm({
     borderRadius: 8,
     border: "none",
     backgroundColor: "transparent",
-    color: "#9ca3af",
+    color: theme.colors.textMuted,
     cursor: "pointer",
-    transition: "all 0.15s ease",
+    transition: "all 0.3s ease",
   };
 
   const contentStyle: React.CSSProperties = {
@@ -173,21 +178,22 @@ export function EventForm({
     display: "block",
     fontSize: 13,
     fontWeight: 500,
-    color: "#4b5563",
+    color: theme.colors.textSecondary,
     marginBottom: 8,
+    transition: "all 0.3s ease",
   };
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "10px 14px",
     borderRadius: 8,
-    border: "1px solid #e5e5eb",
-    backgroundColor: "#f9fafb",
-    color: "#1e1e2e",
+    border: `1px solid ${theme.colors.inputBorder}`,
+    backgroundColor: theme.colors.inputBg,
+    color: theme.colors.text,
     fontSize: 14,
     outline: "none",
     boxSizing: "border-box",
-    transition: "border-color 0.15s ease",
+    transition: "all 0.3s ease",
   };
 
   const textareaStyle: React.CSSProperties = {
@@ -213,8 +219,9 @@ export function EventForm({
     right: 12,
     top: "50%",
     transform: "translateY(-50%)",
-    color: "#9ca3af",
+    color: theme.colors.textMuted,
     pointerEvents: "none",
+    transition: "all 0.3s ease",
   };
 
   const rowStyle: React.CSSProperties = {
@@ -234,21 +241,21 @@ export function EventForm({
     gap: 10,
     padding: "12px 14px",
     borderRadius: 8,
-    border: "1px solid #e5e5eb",
-    backgroundColor: "#f9fafb",
+    border: `1px solid ${theme.colors.inputBorder}`,
+    backgroundColor: theme.colors.inputBg,
     cursor: "pointer",
-    transition: "all 0.15s ease",
+    transition: "all 0.3s ease",
   };
 
   const checkboxStyle: React.CSSProperties = {
     width: 18,
     height: 18,
     borderRadius: 4,
-    border: "2px solid #d1d5db",
+    border: `2px solid ${theme.colors.border}`,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    transition: "all 0.15s ease",
+    transition: "all 0.3s ease",
     flexShrink: 0,
   };
 
@@ -256,8 +263,9 @@ export function EventForm({
     display: "flex",
     gap: 12,
     padding: "16px 24px",
-    borderTop: "1px solid #e5e5eb",
-    backgroundColor: "#fafafa",
+    borderTop: `1px solid ${theme.colors.border}`,
+    backgroundColor: theme.colors.backgroundSecondary,
+    transition: "all 0.3s ease",
   };
 
   const buttonBaseStyle: React.CSSProperties = {
@@ -267,7 +275,7 @@ export function EventForm({
     fontSize: 14,
     fontWeight: 500,
     cursor: "pointer",
-    transition: "all 0.15s ease",
+    transition: "all 0.3s ease",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -276,16 +284,16 @@ export function EventForm({
 
   const cancelButtonStyle: React.CSSProperties = {
     ...buttonBaseStyle,
-    border: "1px solid #e5e5eb",
+    border: `1px solid ${theme.colors.border}`,
     backgroundColor: "transparent",
-    color: "#6b7280",
+    color: theme.colors.textMuted,
   };
 
   const saveButtonStyle: React.CSSProperties = {
     ...buttonBaseStyle,
     border: "none",
-    backgroundColor: "#7c3aed",
-    color: "#fff",
+    backgroundColor: theme.colors.primary,
+    color: theme.colors.textInverse,
   };
 
   return (
@@ -316,12 +324,12 @@ export function EventForm({
                 onClick={handleClose}
                 style={closeButtonStyle}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = "#f3f4f6";
-                  e.currentTarget.style.color = "#4b5563";
+                  e.currentTarget.style.backgroundColor = theme.colors.cardHover;
+                  e.currentTarget.style.color = theme.colors.textSecondary;
                 }}
                 onMouseOut={(e) => {
                   e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = "#9ca3af";
+                  e.currentTarget.style.color = theme.colors.textMuted;
                 }}
               >
                 <X style={{ width: 18, height: 18 }} />
@@ -356,12 +364,12 @@ export function EventForm({
                         alignItems: "center",
                         justifyContent: "center",
                         borderRadius: "50%",
-                        backgroundColor: "rgba(22, 163, 74, 0.15)",
+                        backgroundColor: theme.colors.successBg,
                       }}
                     >
-                      <Check style={{ width: 32, height: 32, color: "#16a34a" }} />
+                      <Check style={{ width: 32, height: 32, color: theme.colors.success }} />
                     </motion.div>
-                    <p style={{ fontWeight: 500, color: "#1e1e2e", margin: 0 }}>
+                    <p style={{ fontWeight: 500, color: theme.colors.text, margin: 0 }}>
                       Event created!
                     </p>
                   </motion.div>
@@ -392,13 +400,13 @@ export function EventForm({
                                 gap: 8,
                                 padding: "10px 14px",
                                 borderRadius: 8,
-                                border: `2px solid ${isSelected ? meta.color : "#e5e5eb"}`,
+                                border: `2px solid ${isSelected ? meta.color : theme.colors.border}`,
                                 backgroundColor: isSelected ? `${meta.color}10` : "transparent",
-                                color: isSelected ? meta.color : "#6b7280",
+                                color: isSelected ? meta.color : theme.colors.textMuted,
                                 fontSize: 13,
                                 fontWeight: 600,
                                 cursor: "pointer",
-                                transition: "all 0.15s ease",
+                                transition: "all 0.3s ease",
                               }}
                               onMouseOver={(e) => {
                                 if (!isSelected) {
@@ -408,7 +416,7 @@ export function EventForm({
                               }}
                               onMouseOut={(e) => {
                                 if (!isSelected) {
-                                  e.currentTarget.style.borderColor = "#e5e5eb";
+                                  e.currentTarget.style.borderColor = theme.colors.border;
                                   e.currentTarget.style.backgroundColor = "transparent";
                                 }
                               }}
@@ -424,7 +432,7 @@ export function EventForm({
                     {/* Title */}
                     <div style={fieldStyle}>
                       <label htmlFor="title" style={labelStyle}>
-                        Title <span style={{ color: "#ef4444" }}>*</span>
+                        Title <span style={{ color: theme.colors.error }}>*</span>
                       </label>
                       <input
                         id="title"
@@ -435,8 +443,8 @@ export function EventForm({
                         required
                         autoFocus
                         style={inputStyle}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = "#7c3aed")}
-                        onBlur={(e) => (e.currentTarget.style.borderColor = "#e5e5eb")}
+                        onFocus={(e) => (e.currentTarget.style.borderColor = theme.colors.primary)}
+                        onBlur={(e) => (e.currentTarget.style.borderColor = theme.colors.inputBorder)}
                       />
                     </div>
 
@@ -452,8 +460,8 @@ export function EventForm({
                         onChange={(e) => setDescription(e.target.value)}
                         rows={3}
                         style={textareaStyle}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = "#7c3aed")}
-                        onBlur={(e) => (e.currentTarget.style.borderColor = "#e5e5eb")}
+                        onFocus={(e) => (e.currentTarget.style.borderColor = theme.colors.primary)}
+                        onBlur={(e) => (e.currentTarget.style.borderColor = theme.colors.inputBorder)}
                       />
                     </div>
 
@@ -461,7 +469,7 @@ export function EventForm({
                     <div style={rowStyle}>
                       <div style={{ flex: 1 }}>
                         <label htmlFor="eventDate" style={labelStyle}>
-                          Date <span style={{ color: "#ef4444" }}>*</span>
+                          Date <span style={{ color: theme.colors.error }}>*</span>
                         </label>
                         <input
                           id="eventDate"
@@ -470,8 +478,8 @@ export function EventForm({
                           onChange={(e) => setEventDate(e.target.value)}
                           required
                           style={inputStyle}
-                          onFocus={(e) => (e.currentTarget.style.borderColor = "#7c3aed")}
-                          onBlur={(e) => (e.currentTarget.style.borderColor = "#e5e5eb")}
+                          onFocus={(e) => (e.currentTarget.style.borderColor = theme.colors.primary)}
+                          onBlur={(e) => (e.currentTarget.style.borderColor = theme.colors.inputBorder)}
                         />
                       </div>
 
@@ -486,8 +494,8 @@ export function EventForm({
                             value={eventTime}
                             onChange={(e) => setEventTime(e.target.value)}
                             style={inputStyle}
-                            onFocus={(e) => (e.currentTarget.style.borderColor = "#7c3aed")}
-                            onBlur={(e) => (e.currentTarget.style.borderColor = "#e5e5eb")}
+                            onFocus={(e) => (e.currentTarget.style.borderColor = theme.colors.primary)}
+                            onBlur={(e) => (e.currentTarget.style.borderColor = theme.colors.inputBorder)}
                           />
                         </div>
                       )}
@@ -500,7 +508,7 @@ export function EventForm({
                         <div style={{ display: "flex", gap: 8 }}>
                           {(["internal", "external"] as EventVisibility[]).map((vis) => {
                             const isSelected = visibility === vis;
-                            const color = vis === "external" ? "#10b981" : "#6b7280";
+                            const color = vis === "external" ? theme.colors.success : theme.colors.textMuted;
                             return (
                               <button
                                 key={vis}
@@ -513,13 +521,13 @@ export function EventForm({
                                   justifyContent: "center",
                                   padding: "10px 14px",
                                   borderRadius: 8,
-                                  border: `2px solid ${isSelected ? color : "#e5e5eb"}`,
+                                  border: `2px solid ${isSelected ? color : theme.colors.border}`,
                                   backgroundColor: isSelected ? `${color}10` : "transparent",
-                                  color: isSelected ? color : "#6b7280",
+                                  color: isSelected ? color : theme.colors.textMuted,
                                   fontSize: 13,
                                   fontWeight: 500,
                                   cursor: "pointer",
-                                  transition: "all 0.15s ease",
+                                  transition: "all 0.3s ease",
                                   textTransform: "capitalize",
                                 }}
                                 onMouseOver={(e) => {
@@ -529,7 +537,7 @@ export function EventForm({
                                 }}
                                 onMouseOut={(e) => {
                                   if (!isSelected) {
-                                    e.currentTarget.style.borderColor = "#e5e5eb";
+                                    e.currentTarget.style.borderColor = theme.colors.border;
                                   }
                                 }}
                               >
@@ -554,10 +562,10 @@ export function EventForm({
                             onChange={(e) => setLinkedAssetId(e.target.value)}
                             style={{
                               ...selectStyle,
-                              color: linkedAssetId ? "#1e1e2e" : "#9ca3af",
+                              color: linkedAssetId ? theme.colors.text : theme.colors.textMuted,
                             }}
-                            onFocus={(e) => (e.currentTarget.style.borderColor = "#7c3aed")}
-                            onBlur={(e) => (e.currentTarget.style.borderColor = "#e5e5eb")}
+                            onFocus={(e) => (e.currentTarget.style.borderColor = theme.colors.primary)}
+                            onBlur={(e) => (e.currentTarget.style.borderColor = theme.colors.inputBorder)}
                           >
                             <option value="">No linked task</option>
                             {assets?.map((asset) => (
@@ -577,17 +585,17 @@ export function EventForm({
                         <label
                           style={{
                             ...checkboxWrapperStyle,
-                            borderColor: autoCreateTask ? "#f59e0b" : "#e5e5eb",
-                            backgroundColor: autoCreateTask ? "rgba(245, 158, 11, 0.05)" : "#f9fafb",
+                            borderColor: autoCreateTask ? theme.colors.warning : theme.colors.inputBorder,
+                            backgroundColor: autoCreateTask ? theme.colors.warningBg : theme.colors.inputBg,
                           }}
                           onMouseOver={(e) => {
                             if (!autoCreateTask) {
-                              e.currentTarget.style.borderColor = "#d1d5db";
+                              e.currentTarget.style.borderColor = theme.colors.border;
                             }
                           }}
                           onMouseOut={(e) => {
                             if (!autoCreateTask) {
-                              e.currentTarget.style.borderColor = "#e5e5eb";
+                              e.currentTarget.style.borderColor = theme.colors.inputBorder;
                             }
                           }}
                         >
@@ -600,15 +608,15 @@ export function EventForm({
                           <span
                             style={{
                               ...checkboxStyle,
-                              borderColor: autoCreateTask ? "#f59e0b" : "#d1d5db",
-                              backgroundColor: autoCreateTask ? "#f59e0b" : "transparent",
+                              borderColor: autoCreateTask ? theme.colors.warning : theme.colors.border,
+                              backgroundColor: autoCreateTask ? theme.colors.warning : "transparent",
                             }}
                           >
                             {autoCreateTask && (
-                              <Check style={{ width: 12, height: 12, color: "#fff" }} />
+                              <Check style={{ width: 12, height: 12, color: theme.colors.textInverse }} />
                             )}
                           </span>
-                          <span style={{ fontSize: 14, color: "#4b5563" }}>
+                          <span style={{ fontSize: 14, color: theme.colors.textSecondary }}>
                             Auto-create a task for this deliverable
                           </span>
                         </label>
@@ -627,12 +635,12 @@ export function EventForm({
                   onClick={handleClose}
                   style={cancelButtonStyle}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = "#f3f4f6";
-                    e.currentTarget.style.borderColor = "#d1d5db";
+                    e.currentTarget.style.backgroundColor = theme.colors.cardHover;
+                    e.currentTarget.style.borderColor = theme.colors.border;
                   }}
                   onMouseOut={(e) => {
                     e.currentTarget.style.backgroundColor = "transparent";
-                    e.currentTarget.style.borderColor = "#e5e5eb";
+                    e.currentTarget.style.borderColor = theme.colors.border;
                   }}
                 >
                   Cancel
@@ -648,11 +656,11 @@ export function EventForm({
                   }}
                   onMouseOver={(e) => {
                     if (title.trim() && !isLoading) {
-                      e.currentTarget.style.backgroundColor = "#6d28d9";
+                      e.currentTarget.style.backgroundColor = theme.colors.primaryHover;
                     }
                   }}
                   onMouseOut={(e) => {
-                    e.currentTarget.style.backgroundColor = "#7c3aed";
+                    e.currentTarget.style.backgroundColor = theme.colors.primary;
                   }}
                 >
                   {isLoading ? (

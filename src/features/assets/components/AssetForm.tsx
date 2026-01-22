@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from "motion/react";
 import { useAssetMutations } from "../hooks/useAssetMutations";
 import { Plus, Loader2, X, Check, Tag, Flag, ChevronDown, CalendarDays } from "lucide-react";
 import { ASSET_CATEGORIES, ASSET_PRIORITIES, type AssetCategory, type AssetPriority } from "@/types/database";
+import { useTheme } from "@/stores/themeStore";
 
 interface AssetFormProps {
   onSuccess?: () => void;
 }
 
 export function AssetForm({ onSuccess }: AssetFormProps) {
+  const theme = useTheme();
   const { createAsset } = useAssetMutations();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
@@ -69,10 +71,10 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
     borderRadius: 8,
     border: 'none',
     cursor: 'pointer',
-    backgroundColor: '#7c3aed',
-    color: '#fff',
-    boxShadow: '0 4px 14px rgba(124, 58, 237, 0.25)',
-    transition: 'background-color 0.2s'
+    backgroundColor: theme.colors.primary,
+    color: theme.colors.textInverse,
+    boxShadow: `0 4px 14px ${theme.colors.primaryLight}`,
+    transition: 'all 0.3s ease'
   };
 
   return (
@@ -88,8 +90,8 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
             <button
               onClick={() => setIsOpen(true)}
               style={buttonStyle}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#6d28d9'}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#7c3aed'}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = theme.colors.primaryHover}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = theme.colors.primary}
             >
               <Plus style={{ marginRight: 8, width: 20, height: 20 }} />
               Add New Task
@@ -107,19 +109,21 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
               width: '100%',
               maxWidth: 500,
               borderRadius: 12,
-              border: '1px solid #e5e5eb',
-              backgroundColor: '#ffffff',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)'
+              border: `1px solid ${theme.colors.border}`,
+              backgroundColor: theme.colors.card,
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+              transition: 'all 0.3s ease'
             }}>
               {/* Header */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                borderBottom: '1px solid #e5e5eb',
-                padding: '20px 28px'
+                borderBottom: `1px solid ${theme.colors.border}`,
+                padding: '20px 28px',
+                transition: 'all 0.3s ease'
               }}>
-                <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e1e2e', margin: 0 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 600, color: theme.colors.text, margin: 0, transition: 'all 0.3s ease' }}>
                   Add New Task
                 </h3>
                 <button
@@ -130,10 +134,11 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                     backgroundColor: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
-                    color: '#9ca3af',
+                    color: theme.colors.textMuted,
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    transition: 'all 0.3s ease'
                   }}
                 >
                   <X style={{ width: 20, height: 20 }} />
@@ -168,12 +173,13 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                           alignItems: 'center',
                           justifyContent: 'center',
                           borderRadius: '50%',
-                          backgroundColor: 'rgba(22, 163, 74, 0.15)'
+                          backgroundColor: theme.colors.successBg,
+                          transition: 'all 0.3s ease'
                         }}
                       >
-                        <Check style={{ width: 32, height: 32, color: '#16a34a' }} />
+                        <Check style={{ width: 32, height: 32, color: theme.colors.success }} />
                       </motion.div>
-                      <p style={{ fontWeight: 500, color: '#1e1e2e', margin: 0 }}>Task added!</p>
+                      <p style={{ fontWeight: 500, color: theme.colors.text, margin: 0, transition: 'all 0.3s ease' }}>Task added!</p>
                     </motion.div>
                   ) : (
                     <motion.form
@@ -187,8 +193,9 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                           display: 'block',
                           fontSize: 14,
                           fontWeight: 500,
-                          color: '#4b5563',
-                          marginBottom: 10
+                          color: theme.colors.textSecondary,
+                          marginBottom: 10,
+                          transition: 'all 0.3s ease'
                         }}>
                           Task Name
                         </label>
@@ -203,12 +210,13 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                             width: '100%',
                             padding: '12px 14px',
                             borderRadius: 8,
-                            border: '1px solid #e5e5eb',
-                            backgroundColor: '#f9fafb',
-                            color: '#1e1e2e',
+                            border: `1px solid ${theme.colors.inputBorder}`,
+                            backgroundColor: theme.colors.inputBg,
+                            color: theme.colors.text,
                             fontSize: 14,
                             outline: 'none',
-                            boxSizing: 'border-box'
+                            boxSizing: 'border-box',
+                            transition: 'all 0.3s ease'
                           }}
                         />
                       </div>
@@ -217,8 +225,9 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                           display: 'block',
                           fontSize: 14,
                           fontWeight: 500,
-                          color: '#4b5563',
-                          marginBottom: 10
+                          color: theme.colors.textSecondary,
+                          marginBottom: 10,
+                          transition: 'all 0.3s ease'
                         }}>
                           Description
                         </label>
@@ -232,15 +241,16 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                             width: '100%',
                             padding: '12px 14px',
                             borderRadius: 8,
-                            border: '1px solid #e5e5eb',
-                            backgroundColor: '#f9fafb',
-                            color: '#1e1e2e',
+                            border: `1px solid ${theme.colors.inputBorder}`,
+                            backgroundColor: theme.colors.inputBg,
+                            color: theme.colors.text,
                             fontSize: 14,
                             outline: 'none',
                             resize: 'vertical',
                             fontFamily: 'inherit',
                             boxSizing: 'border-box',
-                            minHeight: 100
+                            minHeight: 100,
+                            transition: 'all 0.3s ease'
                           }}
                         />
                       </div>
@@ -255,8 +265,9 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                             gap: 6,
                             fontSize: 14,
                             fontWeight: 500,
-                            color: '#4b5563',
-                            marginBottom: 10
+                            color: theme.colors.textSecondary,
+                            marginBottom: 10,
+                            transition: 'all 0.3s ease'
                           }}>
                             <Tag style={{ width: 14, height: 14 }} />
                             Category
@@ -270,14 +281,15 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                                 width: '100%',
                                 padding: '12px 36px 12px 14px',
                                 borderRadius: 8,
-                                border: '1px solid #e5e5eb',
-                                backgroundColor: '#f9fafb',
-                                color: category ? '#1e1e2e' : '#9ca3af',
+                                border: `1px solid ${theme.colors.inputBorder}`,
+                                backgroundColor: theme.colors.inputBg,
+                                color: category ? theme.colors.text : theme.colors.textMuted,
                                 fontSize: 14,
                                 outline: 'none',
                                 appearance: 'none',
                                 cursor: 'pointer',
-                                boxSizing: 'border-box'
+                                boxSizing: 'border-box',
+                                transition: 'all 0.3s ease'
                               }}
                             >
                               <option value="">Select...</option>
@@ -292,7 +304,7 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                               transform: 'translateY(-50%)',
                               width: 16,
                               height: 16,
-                              color: '#9ca3af',
+                              color: theme.colors.textMuted,
                               pointerEvents: 'none'
                             }} />
                           </div>
@@ -306,8 +318,9 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                             gap: 6,
                             fontSize: 14,
                             fontWeight: 500,
-                            color: '#4b5563',
-                            marginBottom: 10
+                            color: theme.colors.textSecondary,
+                            marginBottom: 10,
+                            transition: 'all 0.3s ease'
                           }}>
                             <Flag style={{ width: 14, height: 14 }} />
                             Priority
@@ -321,14 +334,15 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                                 width: '100%',
                                 padding: '12px 36px 12px 14px',
                                 borderRadius: 8,
-                                border: '1px solid #e5e5eb',
-                                backgroundColor: '#f9fafb',
-                                color: priority ? '#1e1e2e' : '#9ca3af',
+                                border: `1px solid ${theme.colors.inputBorder}`,
+                                backgroundColor: theme.colors.inputBg,
+                                color: priority ? theme.colors.text : theme.colors.textMuted,
                                 fontSize: 14,
                                 outline: 'none',
                                 appearance: 'none',
                                 cursor: 'pointer',
-                                boxSizing: 'border-box'
+                                boxSizing: 'border-box',
+                                transition: 'all 0.3s ease'
                               }}
                             >
                               <option value="">Select...</option>
@@ -343,7 +357,7 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                               transform: 'translateY(-50%)',
                               width: 16,
                               height: 16,
-                              color: '#9ca3af',
+                              color: theme.colors.textMuted,
                               pointerEvents: 'none'
                             }} />
                           </div>
@@ -357,8 +371,9 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                             gap: 6,
                             fontSize: 14,
                             fontWeight: 500,
-                            color: '#4b5563',
-                            marginBottom: 10
+                            color: theme.colors.textSecondary,
+                            marginBottom: 10,
+                            transition: 'all 0.3s ease'
                           }}>
                             <CalendarDays style={{ width: 14, height: 14 }} />
                             ETA
@@ -372,12 +387,13 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                               width: '100%',
                               padding: '12px 14px',
                               borderRadius: 8,
-                              border: '1px solid #e5e5eb',
-                              backgroundColor: '#f9fafb',
-                              color: etaDate ? '#1e1e2e' : '#9ca3af',
+                              border: `1px solid ${theme.colors.inputBorder}`,
+                              backgroundColor: theme.colors.inputBg,
+                              color: etaDate ? theme.colors.text : theme.colors.textMuted,
                               fontSize: 14,
                               outline: 'none',
-                              boxSizing: 'border-box'
+                              boxSizing: 'border-box',
+                              transition: 'all 0.3s ease'
                             }}
                           />
                         </div>
@@ -387,11 +403,12 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                         <div style={{
                           padding: '12px 14px',
                           borderRadius: 8,
-                          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                          border: '1px solid rgba(239, 68, 68, 0.3)',
-                          color: '#f87171',
+                          backgroundColor: theme.colors.errorBg,
+                          border: `1px solid ${theme.colors.error}`,
+                          color: theme.colors.error,
                           fontSize: 14,
-                          marginBottom: 20
+                          marginBottom: 20,
+                          transition: 'all 0.3s ease'
                         }}>
                           {error}
                         </div>
@@ -404,12 +421,13 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                             flex: 1,
                             padding: '12px 18px',
                             borderRadius: 8,
-                            border: '1px solid #e5e5eb',
+                            border: `1px solid ${theme.colors.border}`,
                             backgroundColor: 'transparent',
-                            color: '#6b7280',
+                            color: theme.colors.textMuted,
                             fontSize: 14,
                             fontWeight: 500,
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease'
                           }}
                         >
                           Cancel
@@ -425,12 +443,13 @@ export function AssetForm({ onSuccess }: AssetFormProps) {
                             padding: '12px 18px',
                             borderRadius: 8,
                             border: 'none',
-                            backgroundColor: createAsset.isPending || !name.trim() ? '#a78bfa' : '#7c3aed',
-                            color: '#fff',
+                            backgroundColor: createAsset.isPending || !name.trim() ? theme.colors.accent : theme.colors.primary,
+                            color: theme.colors.textInverse,
                             fontSize: 14,
                             fontWeight: 500,
                             cursor: createAsset.isPending || !name.trim() ? 'not-allowed' : 'pointer',
-                            opacity: createAsset.isPending || !name.trim() ? 0.7 : 1
+                            opacity: createAsset.isPending || !name.trim() ? 0.7 : 1,
+                            transition: 'all 0.3s ease'
                           }}
                         >
                           {createAsset.isPending ? (

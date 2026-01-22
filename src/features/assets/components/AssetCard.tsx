@@ -1,29 +1,9 @@
 import { motion } from "motion/react";
-import { Clock, User, X, Tag, Flag, UserCheck, Zap } from "lucide-react";
+import { Clock, User, X, Tag, Flag, UserCheck, Target } from "lucide-react";
 import type { AssetWithCreator } from "../hooks/useAssets";
-import { getDaysUntilDelete } from "../hooks/useAssets";
-import { useSprintsForTask } from "@/features/sprints/hooks/useSprints";
-import { ASSET_CATEGORIES, ASSET_PRIORITIES, SPRINT_STATUSES } from "@/types/database";
-
-// Keyframes for the claimed glow effect
-const claimedGlowKeyframes = `
-@keyframes claimedGlow {
-  0%, 100% {
-    box-shadow: 0 0 8px rgba(124, 58, 237, 0.3), 0 0 16px rgba(124, 58, 237, 0.15);
-  }
-  50% {
-    box-shadow: 0 0 12px rgba(124, 58, 237, 0.5), 0 0 24px rgba(124, 58, 237, 0.25);
-  }
-}
-`;
-
-// Inject keyframes into document head if not already present
-if (typeof document !== 'undefined' && !document.getElementById('claimed-glow-keyframes')) {
-  const style = document.createElement('style');
-  style.id = 'claimed-glow-keyframes';
-  style.textContent = claimedGlowKeyframes;
-  document.head.appendChild(style);
-}
+import { useGoalsForTask } from "@/features/goals";
+import { useTheme } from "@/stores/themeStore";
+import { ASSET_CATEGORIES, ASSET_PRIORITIES, GOAL_STATUSES } from "@/types/database";
 
 interface AssetCardProps {
   asset: AssetWithCreator;
@@ -34,6 +14,11 @@ interface AssetCardProps {
 }
 
 const STATUS_STYLES = {
+  blocked: {
+    bg: 'rgba(75, 0, 130, 0.2)',
+    color: '#4b0082',
+    label: 'Blocked'
+  },
   pending: {
     bg: 'rgba(202, 138, 4, 0.15)',
     color: '#b45309',
@@ -45,14 +30,9 @@ const STATUS_STYLES = {
     label: 'In Progress'
   },
   completed: {
-    bg: 'rgba(59, 130, 246, 0.15)',
-    color: '#2563eb',
-    label: 'Completed'
-  },
-  implemented: {
     bg: 'rgba(22, 163, 74, 0.15)',
     color: '#16a34a',
-    label: 'Implemented'
+    label: 'Completed'
   }
 };
 
@@ -63,18 +43,18 @@ export function AssetCard({
   onDelete,
   isDeleting,
 }: AssetCardProps) {
+  const theme = useTheme();
   const creatorName =
     asset.creator?.display_name || asset.creator?.email || "Unknown";
   const category = asset.category ? ASSET_CATEGORIES[asset.category] : null;
   const priority = asset.priority ? ASSET_PRIORITIES[asset.priority] : null;
   const statusStyle = STATUS_STYLES[asset.status];
-  const daysLeft = asset.status === "implemented" ? getDaysUntilDelete(asset.implemented_at) : null;
   const isClaimed = !!asset.claimed_by;
   const claimerName = asset.claimer?.display_name || asset.claimer?.email || null;
 
-  // Get sprints this task belongs to
-  const { data: sprints = [] } = useSprintsForTask(asset.id);
-  const activeSprint = sprints.find(s => s.status === "active" || s.status === "completed");
+  // Get goals this task belongs to
+  const { data: goals = [] } = useGoalsForTask(asset.id);
+  const activeGoal = goals.find(g => g.status === "active" || g.status === "completed");
 
   return (
     <motion.div
@@ -96,17 +76,20 @@ export function AssetCard({
           height: '100%',
           borderRadius: 12,
           border: isClaimed
-            ? '2px solid rgba(124, 58, 237, 0.5)'
-            : `1px solid ${category ? `${category.color}30` : '#e5e5eb'}`,
+            ? `2px solid ${theme.colors.claimed}80`
+            : asset.status === 'blocked'
+            ? '1px solid rgba(75, 0, 130, 0.25)'
+            : `1px solid ${category ? `${category.color}30` : theme.colors.cardBorder}`,
           backgroundColor: isClaimed
-            ? 'rgba(124, 58, 237, 0.04)'
-            : (category ? `${category.color}06` : '#ffffff'),
-          padding: isClaimed ? 19 : 20, // Compensate for thicker border
+            ? theme.colors.claimedBg
+            : asset.status === 'blocked'
+            ? 'rgba(75, 0, 130, 0.03)'
+            : (category ? `${category.color}${theme.isDark ? '10' : '06'}` : theme.colors.card),
+          padding: isClaimed ? 19 : 20,
           transition: 'all 0.3s ease',
           boxSizing: 'border-box',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+          boxShadow: theme.isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.06)',
           cursor: onClick ? 'pointer' : 'default',
-          animation: isClaimed ? 'claimedGlow 2s ease-in-out infinite' : 'none',
           position: 'relative',
         }}
       >
@@ -132,20 +115,6 @@ export function AssetCard({
               }}>
                 {statusStyle.label}
               </span>
-
-              {/* Days until auto-delete badge for implemented */}
-              {daysLeft !== null && (
-                <span style={{
-                  borderRadius: 999,
-                  padding: '3px 8px',
-                  fontSize: 11,
-                  fontWeight: 500,
-                  backgroundColor: daysLeft <= 2 ? 'rgba(220, 38, 38, 0.15)' : 'rgba(107, 114, 128, 0.15)',
-                  color: daysLeft <= 2 ? '#dc2626' : '#6b7280'
-                }}>
-                  {daysLeft === 0 ? 'Deleting soon' : `${daysLeft}d left`}
-                </span>
-              )}
 
               {/* Category badge */}
               {category && (
@@ -193,12 +162,12 @@ export function AssetCard({
                     padding: '3px 8px',
                     fontSize: 11,
                     fontWeight: 600,
-                    background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
-                    color: '#fff',
+                    background: `linear-gradient(135deg, ${theme.colors.primary} 0%, ${theme.colors.accent} 100%)`,
+                    color: theme.colors.textInverse,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 4,
-                    boxShadow: '0 2px 4px rgba(124, 58, 237, 0.3)',
+                    boxShadow: `0 2px 4px ${theme.colors.primary}50`,
                   }}
                 >
                   <UserCheck style={{ width: 10, height: 10 }} />
@@ -206,28 +175,28 @@ export function AssetCard({
                 </motion.span>
               )}
 
-              {/* Sprint badge */}
-              {activeSprint && (
+              {/* Goal badge */}
+              {activeGoal && (
                 <span style={{
                   borderRadius: 999,
                   padding: '3px 8px',
                   fontSize: 11,
                   fontWeight: 500,
-                  backgroundColor: `${SPRINT_STATUSES[activeSprint.status].color}18`,
-                  color: SPRINT_STATUSES[activeSprint.status].color,
+                  backgroundColor: `${GOAL_STATUSES[activeGoal.status].color}18`,
+                  color: GOAL_STATUSES[activeGoal.status].color,
                   display: 'flex',
                   alignItems: 'center',
                   gap: 4,
                   maxWidth: 120,
                   overflow: 'hidden',
                 }}>
-                  <Zap style={{ width: 10, height: 10, flexShrink: 0 }} />
+                  <Target style={{ width: 10, height: 10, flexShrink: 0 }} />
                   <span style={{
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                   }}>
-                    {activeSprint.name}
+                    {activeGoal.name}
                   </span>
                 </span>
               )}
@@ -237,13 +206,14 @@ export function AssetCard({
             <h3 style={{
               fontWeight: 600,
               fontSize: 17,
-              color: '#1e1e2e',
+              color: theme.colors.text,
               lineHeight: 1.3,
               margin: 0,
               overflow: 'hidden',
               display: '-webkit-box',
               WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical'
+              WebkitBoxOrient: 'vertical',
+              transition: 'color 0.3s ease'
             }}>
               {asset.name}
             </h3>
@@ -267,19 +237,19 @@ export function AssetCard({
                 borderRadius: 6,
                 border: 'none',
                 backgroundColor: 'transparent',
-                color: '#9ca3af',
+                color: theme.colors.textMuted,
                 cursor: isDeleting ? 'not-allowed' : 'pointer',
                 opacity: isDeleting ? 0.5 : 1,
                 transition: 'all 0.15s ease',
                 flexShrink: 0,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(220, 38, 38, 0.1)';
-                e.currentTarget.style.color = '#dc2626';
+                e.currentTarget.style.backgroundColor = theme.colors.errorBg;
+                e.currentTarget.style.color = theme.colors.error;
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = '#9ca3af';
+                e.currentTarget.style.color = theme.colors.textMuted;
               }}
             >
               <X style={{ width: 16, height: 16 }} />
@@ -292,13 +262,14 @@ export function AssetCard({
           <p style={{
             marginBottom: 14,
             fontSize: 13,
-            color: '#6b7280',
+            color: theme.colors.textMuted,
             overflow: 'hidden',
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             marginTop: 0,
             lineHeight: 1.5,
+            transition: 'color 0.3s ease'
           }}>
             {asset.blurb}
           </p>
@@ -310,7 +281,8 @@ export function AssetCard({
           alignItems: 'center',
           gap: 8,
           fontSize: 12,
-          color: '#9ca3af'
+          color: theme.colors.textMuted,
+          transition: 'color 0.3s ease'
         }}>
           <User style={{ width: 13, height: 13 }} />
           <span>{creatorName}</span>
@@ -324,10 +296,11 @@ export function AssetCard({
           <div style={{
             marginTop: 12,
             paddingTop: 12,
-            borderTop: '1px solid #f0f0f5',
+            borderTop: `1px solid ${theme.colors.borderLight}`,
             fontSize: 12,
-            color: '#9ca3af',
+            color: theme.colors.textMuted,
             textAlign: 'center',
+            transition: 'all 0.3s ease'
           }}>
             Click to view details
           </div>

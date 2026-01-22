@@ -5,6 +5,7 @@ import type { FeatureRequestWithCreator } from "../hooks/useFeatureRequests";
 import { getDaysUntilHide } from "../hooks/useFeatureRequests";
 import { ASSET_PRIORITIES, FEATURE_REQUEST_STATUSES } from "@/types/database";
 import { DenyFeatureRequestModal } from "./DenyFeatureRequestModal";
+import { useTheme } from "@/stores/themeStore";
 
 interface FeatureRequestDetailModalProps {
   request: FeatureRequestWithCreator | null;
@@ -24,6 +25,7 @@ export function FeatureRequestDetailModal({
   isTransitioning,
 }: FeatureRequestDetailModalProps) {
   const [showDenyModal, setShowDenyModal] = useState(false);
+  const theme = useTheme();
 
   if (!request) return null;
 
@@ -85,23 +87,25 @@ export function FeatureRequestDetailModal({
                   width: '100%',
                   maxWidth: 560,
                   maxHeight: 'calc(100vh - 48px)',
-                  backgroundColor: '#ffffff',
+                  backgroundColor: theme.colors.card,
                   borderRadius: 16,
                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
                   display: 'flex',
                   flexDirection: 'column',
                   overflow: 'hidden',
                   pointerEvents: 'auto',
+                  transition: 'all 0.3s ease',
                 }}
               >
                 {/* Header */}
                 <div style={{
                   padding: '20px 24px',
-                  borderBottom: '1px solid #e5e5eb',
+                  borderBottom: `1px solid ${theme.colors.border}`,
                   display: 'flex',
                   alignItems: 'flex-start',
                   justifyContent: 'space-between',
                   gap: 16,
+                  transition: 'all 0.3s ease',
                 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
@@ -124,8 +128,8 @@ export function FeatureRequestDetailModal({
                           borderRadius: 999,
                           fontSize: 12,
                           fontWeight: 500,
-                          backgroundColor: daysLeft <= 2 ? 'rgba(220, 38, 38, 0.15)' : 'rgba(107, 114, 128, 0.15)',
-                          color: daysLeft <= 2 ? '#dc2626' : '#6b7280',
+                          backgroundColor: daysLeft <= 2 ? `${theme.colors.error}26` : `${theme.colors.textMuted}26`,
+                          color: daysLeft <= 2 ? theme.colors.error : theme.colors.textMuted,
                         }}>
                           {daysLeft === 0 ? 'Hiding soon' : `Auto-hides in ${daysLeft}d`}
                         </span>
@@ -153,9 +157,10 @@ export function FeatureRequestDetailModal({
                     <h2 style={{
                       fontSize: 22,
                       fontWeight: 600,
-                      color: '#1e1e2e',
+                      color: theme.colors.text,
                       margin: 0,
                       lineHeight: 1.3,
+                      transition: 'all 0.3s ease',
                     }}>
                       {request.name}
                     </h2>
@@ -172,9 +177,10 @@ export function FeatureRequestDetailModal({
                       borderRadius: 8,
                       border: 'none',
                       backgroundColor: 'transparent',
-                      color: '#9ca3af',
+                      color: theme.colors.textMuted,
                       cursor: 'pointer',
                       flexShrink: 0,
+                      transition: 'all 0.3s ease',
                     }}
                   >
                     <X style={{ width: 20, height: 20 }} />
@@ -192,26 +198,29 @@ export function FeatureRequestDetailModal({
                     <h3 style={{
                       fontSize: 13,
                       fontWeight: 600,
-                      color: '#6b7280',
+                      color: theme.colors.textMuted,
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
                       margin: '0 0 8px 0',
+                      transition: 'all 0.3s ease',
                     }}>
                       Description
                     </h3>
                     <div style={{
-                      backgroundColor: '#f9fafb',
+                      backgroundColor: theme.colors.inputBg,
                       borderRadius: 10,
                       padding: 16,
                       maxHeight: 200,
                       overflow: 'auto',
+                      transition: 'all 0.3s ease',
                     }}>
                       <p style={{
                         fontSize: 14,
-                        color: '#4b5563',
+                        color: theme.colors.textMuted,
                         lineHeight: 1.6,
                         margin: 0,
                         whiteSpace: 'pre-wrap',
+                        transition: 'all 0.3s ease',
                       }}>
                         {request.description || "No description provided."}
                       </p>
@@ -224,29 +233,32 @@ export function FeatureRequestDetailModal({
                       <h3 style={{
                         fontSize: 13,
                         fontWeight: 600,
-                        color: '#ef4444',
+                        color: theme.colors.error,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                         margin: '0 0 8px 0',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 6,
+                        transition: 'all 0.3s ease',
                       }}>
                         <MessageSquare style={{ width: 14, height: 14 }} />
                         Denial Reason
                       </h3>
                       <div style={{
-                        backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                        backgroundColor: `${theme.colors.error}14`,
                         borderRadius: 10,
                         padding: 16,
-                        border: '1px solid rgba(239, 68, 68, 0.15)',
+                        border: `1px solid ${theme.colors.error}26`,
+                        transition: 'all 0.3s ease',
                       }}>
                         <p style={{
                           fontSize: 14,
-                          color: '#4b5563',
+                          color: theme.colors.textMuted,
                           lineHeight: 1.6,
                           margin: 0,
                           whiteSpace: 'pre-wrap',
+                          transition: 'all 0.3s ease',
                         }}>
                           {request.denial_reason}
                         </p>
@@ -258,31 +270,33 @@ export function FeatureRequestDetailModal({
                   {isAccepted && (
                     <div style={{ marginBottom: 24 }}>
                       <div style={{
-                        backgroundColor: 'rgba(22, 163, 74, 0.08)',
+                        backgroundColor: `${theme.colors.success}14`,
                         borderRadius: 10,
                         padding: 16,
-                        border: '1px solid rgba(22, 163, 74, 0.15)',
+                        border: `1px solid ${theme.colors.success}26`,
                         display: 'flex',
                         alignItems: 'center',
                         gap: 12,
+                        transition: 'all 0.3s ease',
                       }}>
                         <div style={{
                           width: 40,
                           height: 40,
                           borderRadius: 10,
-                          backgroundColor: 'rgba(22, 163, 74, 0.15)',
+                          backgroundColor: `${theme.colors.success}26`,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           flexShrink: 0,
+                          transition: 'all 0.3s ease',
                         }}>
-                          <Check style={{ width: 20, height: 20, color: '#16a34a' }} />
+                          <Check style={{ width: 20, height: 20, color: theme.colors.success }} />
                         </div>
                         <div>
-                          <p style={{ fontSize: 14, fontWeight: 600, color: '#16a34a', margin: 0 }}>
+                          <p style={{ fontSize: 14, fontWeight: 600, color: theme.colors.success, margin: 0, transition: 'all 0.3s ease' }}>
                             Request Accepted
                           </p>
-                          <p style={{ fontSize: 13, color: '#6b7280', margin: '2px 0 0 0' }}>
+                          <p style={{ fontSize: 13, color: theme.colors.textMuted, margin: '2px 0 0 0', transition: 'all 0.3s ease' }}>
                             A task has been created from this request
                           </p>
                         </div>
@@ -298,12 +312,13 @@ export function FeatureRequestDetailModal({
                               gap: 6,
                               padding: '8px 12px',
                               borderRadius: 8,
-                              border: '1px solid rgba(22, 163, 74, 0.3)',
+                              border: `1px solid ${theme.colors.success}4d`,
                               backgroundColor: 'transparent',
-                              color: '#16a34a',
+                              color: theme.colors.success,
                               fontSize: 13,
                               fontWeight: 500,
                               cursor: 'pointer',
+                              transition: 'all 0.3s ease',
                             }}
                           >
                             <ExternalLink style={{ width: 14, height: 14 }} />
@@ -322,42 +337,46 @@ export function FeatureRequestDetailModal({
                   }}>
                     {/* Created by */}
                     <div style={{
-                      backgroundColor: '#f9fafb',
+                      backgroundColor: theme.colors.inputBg,
                       borderRadius: 10,
                       padding: 14,
+                      transition: 'all 0.3s ease',
                     }}>
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: 8,
                         marginBottom: 6,
-                        color: '#9ca3af',
+                        color: theme.colors.textMuted,
+                        transition: 'all 0.3s ease',
                       }}>
                         <User style={{ width: 14, height: 14 }} />
                         <span style={{ fontSize: 12, fontWeight: 500 }}>Requested by</span>
                       </div>
-                      <p style={{ fontSize: 14, color: '#1e1e2e', fontWeight: 500, margin: 0 }}>
+                      <p style={{ fontSize: 14, color: theme.colors.text, fontWeight: 500, margin: 0, transition: 'all 0.3s ease' }}>
                         {creatorName}
                       </p>
                     </div>
 
                     {/* Created at */}
                     <div style={{
-                      backgroundColor: '#f9fafb',
+                      backgroundColor: theme.colors.inputBg,
                       borderRadius: 10,
                       padding: 14,
+                      transition: 'all 0.3s ease',
                     }}>
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: 8,
                         marginBottom: 6,
-                        color: '#9ca3af',
+                        color: theme.colors.textMuted,
+                        transition: 'all 0.3s ease',
                       }}>
                         <Clock style={{ width: 14, height: 14 }} />
                         <span style={{ fontSize: 12, fontWeight: 500 }}>Requested</span>
                       </div>
-                      <p style={{ fontSize: 14, color: '#1e1e2e', fontWeight: 500, margin: 0 }}>
+                      <p style={{ fontSize: 14, color: theme.colors.text, fontWeight: 500, margin: 0, transition: 'all 0.3s ease' }}>
                         {formatFullDate(request.created_at)}
                       </p>
                     </div>
@@ -366,42 +385,46 @@ export function FeatureRequestDetailModal({
                     {isAccepted && request.accepter && (
                       <>
                         <div style={{
-                          backgroundColor: 'rgba(22, 163, 74, 0.08)',
+                          backgroundColor: `${theme.colors.success}14`,
                           borderRadius: 10,
                           padding: 14,
+                          transition: 'all 0.3s ease',
                         }}>
                           <div style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: 8,
                             marginBottom: 6,
-                            color: '#16a34a',
+                            color: theme.colors.success,
+                            transition: 'all 0.3s ease',
                           }}>
                             <Check style={{ width: 14, height: 14 }} />
                             <span style={{ fontSize: 12, fontWeight: 500 }}>Accepted by</span>
                           </div>
-                          <p style={{ fontSize: 14, color: '#1e1e2e', fontWeight: 500, margin: 0 }}>
+                          <p style={{ fontSize: 14, color: theme.colors.text, fontWeight: 500, margin: 0, transition: 'all 0.3s ease' }}>
                             {request.accepter.display_name || request.accepter.email}
                           </p>
                         </div>
 
                         {request.accepted_at && (
                           <div style={{
-                            backgroundColor: 'rgba(22, 163, 74, 0.08)',
+                            backgroundColor: `${theme.colors.success}14`,
                             borderRadius: 10,
                             padding: 14,
+                            transition: 'all 0.3s ease',
                           }}>
                             <div style={{
                               display: 'flex',
                               alignItems: 'center',
                               gap: 8,
                               marginBottom: 6,
-                              color: '#16a34a',
+                              color: theme.colors.success,
+                              transition: 'all 0.3s ease',
                             }}>
                               <Clock style={{ width: 14, height: 14 }} />
                               <span style={{ fontSize: 12, fontWeight: 500 }}>Accepted on</span>
                             </div>
-                            <p style={{ fontSize: 14, color: '#1e1e2e', fontWeight: 500, margin: 0 }}>
+                            <p style={{ fontSize: 14, color: theme.colors.text, fontWeight: 500, margin: 0, transition: 'all 0.3s ease' }}>
                               {formatFullDate(request.accepted_at)}
                             </p>
                           </div>
@@ -413,42 +436,46 @@ export function FeatureRequestDetailModal({
                     {isDenied && request.denier && (
                       <>
                         <div style={{
-                          backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                          backgroundColor: `${theme.colors.error}14`,
                           borderRadius: 10,
                           padding: 14,
+                          transition: 'all 0.3s ease',
                         }}>
                           <div style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: 8,
                             marginBottom: 6,
-                            color: '#ef4444',
+                            color: theme.colors.error,
+                            transition: 'all 0.3s ease',
                           }}>
                             <XCircle style={{ width: 14, height: 14 }} />
                             <span style={{ fontSize: 12, fontWeight: 500 }}>Denied by</span>
                           </div>
-                          <p style={{ fontSize: 14, color: '#1e1e2e', fontWeight: 500, margin: 0 }}>
+                          <p style={{ fontSize: 14, color: theme.colors.text, fontWeight: 500, margin: 0, transition: 'all 0.3s ease' }}>
                             {request.denier.display_name || request.denier.email}
                           </p>
                         </div>
 
                         {request.denied_at && (
                           <div style={{
-                            backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                            backgroundColor: `${theme.colors.error}14`,
                             borderRadius: 10,
                             padding: 14,
+                            transition: 'all 0.3s ease',
                           }}>
                             <div style={{
                               display: 'flex',
                               alignItems: 'center',
                               gap: 8,
                               marginBottom: 6,
-                              color: '#ef4444',
+                              color: theme.colors.error,
+                              transition: 'all 0.3s ease',
                             }}>
                               <Clock style={{ width: 14, height: 14 }} />
                               <span style={{ fontSize: 12, fontWeight: 500 }}>Denied on</span>
                             </div>
-                            <p style={{ fontSize: 14, color: '#1e1e2e', fontWeight: 500, margin: 0 }}>
+                            <p style={{ fontSize: 14, color: theme.colors.text, fontWeight: 500, margin: 0, transition: 'all 0.3s ease' }}>
                               {formatFullDate(request.denied_at)}
                             </p>
                           </div>
@@ -462,10 +489,11 @@ export function FeatureRequestDetailModal({
                 {isOpen_ && (onAccept || onDeny) && (
                   <div style={{
                     padding: '16px 24px',
-                    borderTop: '1px solid #e5e5eb',
-                    backgroundColor: '#fafafa',
+                    borderTop: `1px solid ${theme.colors.border}`,
+                    backgroundColor: theme.colors.inputBg,
                     display: 'flex',
                     gap: 12,
+                    transition: 'all 0.3s ease',
                   }}>
                     {onDeny && (
                       <button
@@ -478,13 +506,14 @@ export function FeatureRequestDetailModal({
                           justifyContent: 'center',
                           padding: '12px 20px',
                           borderRadius: 10,
-                          border: '1px solid rgba(239, 68, 68, 0.3)',
-                          backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                          color: '#ef4444',
+                          border: `1px solid ${theme.colors.error}4d`,
+                          backgroundColor: `${theme.colors.error}14`,
+                          color: theme.colors.error,
                           fontSize: 14,
                           fontWeight: 600,
                           cursor: isTransitioning ? 'not-allowed' : 'pointer',
                           opacity: isTransitioning ? 0.7 : 1,
+                          transition: 'all 0.3s ease',
                         }}
                       >
                         <XCircle style={{ marginRight: 8, width: 18, height: 18 }} />
@@ -504,12 +533,13 @@ export function FeatureRequestDetailModal({
                           padding: '12px 20px',
                           borderRadius: 10,
                           border: 'none',
-                          backgroundColor: isTransitioning ? '#86efac' : '#16a34a',
+                          backgroundColor: isTransitioning ? `${theme.colors.success}80` : theme.colors.success,
                           color: '#fff',
                           fontSize: 14,
                           fontWeight: 600,
                           cursor: isTransitioning ? 'not-allowed' : 'pointer',
                           opacity: isTransitioning ? 0.7 : 1,
+                          transition: 'all 0.3s ease',
                         }}
                       >
                         <Check style={{ marginRight: 8, width: 18, height: 18 }} />

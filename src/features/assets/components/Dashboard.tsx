@@ -9,6 +9,7 @@ import { useAssetRealtime } from "../hooks/useAssetRealtime";
 import { useCommentRealtime } from "../hooks/useCommentRealtime";
 import { useNotificationRealtime } from "@/features/notifications/hooks/useNotificationRealtime";
 import { useNavigationStore } from "@/stores/navigationStore";
+import { useTheme, useThemeStore, THEMES, type ThemeId } from "@/stores/themeStore";
 import { AssetList } from "./AssetList";
 import { AssetForm } from "./AssetForm";
 import { AssetDetailModal } from "./AssetDetailModal";
@@ -17,19 +18,25 @@ import { Compare } from "@/features/tools";
 import { ScheduleView } from "@/features/schedule";
 import { ModelingView } from "@/features/modeling";
 import { FeatureRequestsView } from "@/features/featurerequests";
-import { SprintsView } from "@/features/sprints/components/SprintsView";
+import { GoalsDashboard, InboxView, useInboxCount } from "@/features/goals";
 import { NotificationsView } from "@/features/notifications";
-import { Box, LogOut, Settings, Clock, Wifi, Tag, X, ListTodo, Boxes, CircleCheck, Archive, Info, CalendarDays, Wrench, ChevronDown, GitCompare, Cpu, Lightbulb, FileQuestion, PlayCircle, Zap, Bell } from "lucide-react";
+import { BulletinView } from "@/features/bulletin";
+import { Box, LogOut, Clock, Wifi, Tag, X, ListTodo, Boxes, CircleCheck, CalendarDays, Wrench, ChevronDown, GitCompare, Cpu, Lightbulb, FileQuestion, PlayCircle, Target, Bell, ShieldAlert, Clipboard, Palette, Inbox, LayoutDashboard } from "lucide-react";
 import { ASSET_CATEGORIES, type AssetCategory, type AssetStatus } from "@/types/database";
 
-type MainView = "tasks" | "schedule" | "modelingrequests" | "compare" | "featurerequests" | "sprints" | "notifications";
+type MainView = "goals" | "inbox" | "tasks" | "schedule" | "modelingrequests" | "compare" | "featurerequests" | "bulletin" | "notifications";
 type ToolItem = { id: MainView; label: string; icon: React.ReactNode };
 type TechnicalItem = { id: MainView; label: string; icon: React.ReactNode };
 type ModelingItem = { id: MainView; label: string; icon: React.ReactNode };
+type PlanningItem = { id: MainView; label: string; icon: React.ReactNode; badge?: number };
 
 export function Dashboard() {
   const { profile, signOut } = useAuth();
-  const [mainView, setMainView] = useState<MainView>("tasks");
+  const theme = useTheme();
+  const { currentTheme, setTheme } = useThemeStore();
+  const [mainView, setMainView] = useState<MainView>("goals");
+  const { data: inboxCount = 0 } = useInboxCount();
+  const [themePickerOpen, setThemePickerOpen] = useState(false);
   const [appVersion, setAppVersion] = useState<string>("");
   const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "available" | "latest" | "error">("idle");
   const [newVersion, setNewVersion] = useState<string>("");
@@ -70,6 +77,7 @@ export function Dashboard() {
   }
   const [activeTab, setActiveTab] = useState<AssetStatus>("pending");
   const [selectedCategory, setSelectedCategory] = useState<AssetCategory | null>(null);
+  const [planningExpanded, setPlanningExpanded] = useState(true);
   const [toolsExpanded, setToolsExpanded] = useState(false);
   const [technicalExpanded, setTechnicalExpanded] = useState(false);
   const [modelingExpanded, setModelingExpanded] = useState(false);
@@ -83,21 +91,17 @@ export function Dashboard() {
   const {
     markAsInProgress,
     markAsCompleted,
-    markAsImplemented,
+    markAsBlocked,
     moveToPending,
     moveToInProgress,
-    moveToCompleted,
+    unblockAsset,
     updateAsset,
     claimAsset,
     unclaimAsset,
   } = useAssetMutations();
 
-  // Switch to tasks view when a task navigation is requested
-  useEffect(() => {
-    if (pendingTaskId) {
-      setMainView("tasks");
-    }
-  }, [pendingTaskId]);
+  // Keep the current view when a task navigation is requested (modal will show over current view)
+  // No automatic view switch needed since we show a modal overlay
 
   const handleCloseNavigatedTask = () => {
     setPendingTaskId(null);
@@ -116,15 +120,21 @@ export function Dashboard() {
   ];
 
   const modelingItems: ModelingItem[] = [
-    { id: "modelingrequests", label: "Modeling Requests", icon: <FileQuestion style={{ width: 18, height: 18 }} /> },
+    { id: "modelingrequests", label: "Asset Requests", icon: <FileQuestion style={{ width: 18, height: 18 }} /> },
   ];
 
+  const { data: blockedAssets } = useAssets({ status: "blocked", category: selectedCategory });
   const { data: pendingAssets } = useAssets({ status: "pending", category: selectedCategory });
   const { data: inProgressAssets } = useAssets({ status: "in_progress", category: selectedCategory });
   const { data: completedAssets } = useAssets({ status: "completed", category: selectedCategory });
-  const { data: implementedAssets } = useAssets({ status: "implemented", category: selectedCategory });
 
   const tabs: { id: AssetStatus; label: string; icon: React.ReactNode; count?: number }[] = [
+    {
+      id: "blocked",
+      label: "Blocked",
+      icon: <ShieldAlert style={{ width: 16, height: 16 }} />,
+      count: blockedAssets?.length,
+    },
     {
       id: "pending",
       label: "Pending",
@@ -143,22 +153,21 @@ export function Dashboard() {
       icon: <CircleCheck style={{ width: 16, height: 16 }} />,
       count: completedAssets?.length,
     },
-    {
-      id: "implemented",
-      label: "Implemented",
-      icon: <Archive style={{ width: 16, height: 16 }} />,
-      count: implementedAssets?.length,
-    },
   ];
 
-  const sidebarItems: { id: MainView; label: string; icon: React.ReactNode }[] = [
-    { id: "tasks", label: "Tasks", icon: <ListTodo style={{ width: 20, height: 20 }} /> },
-    { id: "schedule", label: "Schedule", icon: <CalendarDays style={{ width: 20, height: 20 }} /> },
-    { id: "sprints", label: "Sprints", icon: <Zap style={{ width: 20, height: 20 }} /> },
+  const planningItems: PlanningItem[] = [
+    { id: "goals", label: "Goals", icon: <Target style={{ width: 18, height: 18 }} /> },
+    { id: "inbox", label: "Inbox", icon: <Inbox style={{ width: 18, height: 18 }} />, badge: inboxCount > 0 ? inboxCount : undefined },
+    { id: "schedule", label: "Schedule", icon: <CalendarDays style={{ width: 18, height: 18 }} /> },
+    { id: "tasks", label: "All Tasks", icon: <ListTodo style={{ width: 18, height: 18 }} /> },
+  ];
+
+  const sidebarItems: { id: MainView; label: string; icon: React.ReactNode; badge?: number }[] = [
+    { id: "bulletin", label: "Bulletin", icon: <Clipboard style={{ width: 20, height: 20 }} /> },
   ];
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f4f4f7', color: '#1e1e2e', display: 'flex' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: theme.colors.background, color: theme.colors.text, display: 'flex', transition: 'background-color 0.3s ease, color 0.3s ease' }}>
       {/* Update Notification */}
       <UpdateNotification />
 
@@ -166,31 +175,34 @@ export function Dashboard() {
       <aside style={{
         width: 220,
         minHeight: '100vh',
-        backgroundColor: '#1e1e2e',
-        borderRight: '1px solid #2d2d3d',
+        backgroundColor: theme.colors.sidebar,
+        borderRight: `1px solid ${theme.colors.sidebarBorder}`,
         display: 'flex',
         flexDirection: 'column',
         position: 'fixed',
         left: 0,
         top: 0,
-        bottom: 0
+        bottom: 0,
+        transition: 'background-color 0.3s ease, border-color 0.3s ease'
       }}>
         {/* Logo */}
         <div style={{
           padding: '20px 16px',
-          borderBottom: '1px solid #2d2d3d',
+          borderBottom: `1px solid ${theme.colors.sidebarBorder}`,
           display: 'flex',
           alignItems: 'center',
-          gap: 12
+          gap: 12,
+          transition: 'border-color 0.3s ease'
         }}>
           <div style={{
             width: 36,
             height: 36,
             borderRadius: 8,
-            backgroundColor: '#7c3aed',
+            backgroundColor: theme.colors.primary,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            transition: 'background-color 0.3s ease'
           }}>
             <Box style={{ width: 20, height: 20, color: '#fff' }} />
           </div>
@@ -199,6 +211,90 @@ export function Dashboard() {
 
         {/* Navigation */}
         <nav style={{ padding: '16px 12px', flex: 1 }}>
+          {/* Planning Dropdown */}
+          <div>
+            <button
+              onClick={() => setPlanningExpanded(!planningExpanded)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                borderRadius: 8,
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: 500,
+                backgroundColor: planningItems.some(t => mainView === t.id) ? theme.colors.sidebarActive : 'transparent',
+                color: planningItems.some(t => mainView === t.id) ? theme.colors.sidebarActiveText : theme.colors.sidebarText,
+                textAlign: 'left',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <LayoutDashboard style={{ width: 20, height: 20 }} />
+                Planning
+              </div>
+              <ChevronDown
+                style={{
+                  width: 16,
+                  height: 16,
+                  transition: 'transform 0.2s ease',
+                  transform: planningExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
+                }}
+              />
+            </button>
+
+            {/* Planning Items */}
+            <div style={{
+              overflow: 'hidden',
+              maxHeight: planningExpanded ? '300px' : '0px',
+              transition: 'max-height 0.2s ease',
+            }}>
+              {planningItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setMainView(item.id)}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 16px 10px 44px',
+                    borderRadius: 6,
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    backgroundColor: mainView === item.id ? theme.colors.sidebarActive : 'transparent',
+                    color: mainView === item.id ? theme.colors.sidebarActiveText : theme.colors.sidebarTextMuted,
+                    textAlign: 'left',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {item.icon}
+                    {item.label}
+                  </div>
+                  {item.badge !== undefined && (
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: 999,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      backgroundColor: theme.colors.accent,
+                      color: '#fff',
+                    }}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Other sidebar items (Bulletin) */}
           {sidebarItems.map((item) => (
             <button
               key={item.id}
@@ -207,22 +303,36 @@ export function Dashboard() {
                 width: '100%',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
+                justifyContent: 'space-between',
                 padding: '12px 16px',
                 borderRadius: 8,
                 border: 'none',
                 cursor: 'pointer',
                 fontSize: 14,
                 fontWeight: 500,
-                backgroundColor: mainView === item.id ? 'rgba(124, 58, 237, 0.2)' : 'transparent',
-                color: mainView === item.id ? '#a78bfa' : '#9ca3af',
-                marginBottom: 4,
+                backgroundColor: mainView === item.id ? theme.colors.sidebarActive : 'transparent',
+                color: mainView === item.id ? theme.colors.sidebarActiveText : theme.colors.sidebarText,
+                marginTop: 4,
                 textAlign: 'left',
-                transition: 'all 0.15s ease'
+                transition: 'all 0.3s ease'
               }}
             >
-              {item.icon}
-              {item.label}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {item.icon}
+                {item.label}
+              </div>
+              {item.badge !== undefined && (
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: 999,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  backgroundColor: theme.colors.accent,
+                  color: '#fff',
+                }}>
+                  {item.badge}
+                </span>
+              )}
             </button>
           ))}
 
@@ -310,15 +420,15 @@ export function Dashboard() {
                 cursor: 'pointer',
                 fontSize: 14,
                 fontWeight: 500,
-                backgroundColor: modelingItems.some(t => mainView === t.id) ? 'rgba(124, 58, 237, 0.2)' : 'transparent',
-                color: modelingItems.some(t => mainView === t.id) ? '#a78bfa' : '#9ca3af',
+                backgroundColor: modelingItems.some(t => mainView === t.id) ? theme.colors.sidebarActive : 'transparent',
+                color: modelingItems.some(t => mainView === t.id) ? theme.colors.sidebarActiveText : theme.colors.sidebarText,
                 textAlign: 'left',
-                transition: 'all 0.15s ease'
+                transition: 'all 0.3s ease'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <Boxes style={{ width: 20, height: 20 }} />
-                Modeling
+                3D Art
               </div>
               <ChevronDown
                 style={{
@@ -351,10 +461,10 @@ export function Dashboard() {
                     cursor: 'pointer',
                     fontSize: 13,
                     fontWeight: 500,
-                    backgroundColor: mainView === item.id ? 'rgba(124, 58, 237, 0.2)' : 'transparent',
-                    color: mainView === item.id ? '#a78bfa' : '#6b7280',
+                    backgroundColor: mainView === item.id ? theme.colors.sidebarActive : 'transparent',
+                    color: mainView === item.id ? theme.colors.sidebarActiveText : theme.colors.sidebarTextMuted,
                     textAlign: 'left',
-                    transition: 'all 0.15s ease'
+                    transition: 'all 0.3s ease'
                   }}
                 >
                   {item.icon}
@@ -462,74 +572,184 @@ export function Dashboard() {
         {/* Bottom section */}
         <div style={{
           padding: '16px',
-          borderTop: '1px solid #2d2d3d'
+          borderTop: `1px solid ${theme.colors.sidebarBorder}`,
+          transition: 'border-color 0.3s ease'
         }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            backgroundColor: 'rgba(22, 163, 74, 0.15)',
+            backgroundColor: theme.colors.successBg,
             padding: '6px 12px',
             borderRadius: 999,
             fontSize: 12,
-            color: '#16a34a',
+            color: theme.colors.success,
             marginBottom: 12,
-            justifyContent: 'center'
+            justifyContent: 'center',
+            transition: 'all 0.3s ease'
           }}>
             <Wifi style={{ width: 12, height: 12 }} />
             <span>Live</span>
           </div>
           <div style={{
             fontSize: 13,
-            color: '#9ca3af',
+            color: theme.colors.sidebarText,
             marginBottom: 12,
             padding: '0 4px',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
+            whiteSpace: 'nowrap',
+            transition: 'color 0.3s ease'
           }}>
             {profile?.display_name || profile?.email}
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+
+          {/* Theme Picker */}
+          <div style={{ position: 'relative', marginBottom: 12 }}>
             <button
-              onClick={() => (window.location.href = "/admin")}
-              title="Admin Panel"
+              onClick={() => setThemePickerOpen(!themePickerOpen)}
+              title="Change Theme"
               style={{
-                flex: 1,
-                padding: '8px',
-                borderRadius: 6,
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: 8,
                 backgroundColor: 'rgba(255,255,255,0.05)',
                 border: 'none',
                 cursor: 'pointer',
-                color: '#9ca3af',
+                color: theme.colors.sidebarText,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.15s ease'
+                justifyContent: 'space-between',
+                transition: 'all 0.3s ease',
+                fontSize: 13
               }}
             >
-              <Settings style={{ width: 18, height: 18 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Palette style={{ width: 16, height: 16 }} />
+                <span>Theme</span>
+              </div>
+              <div style={{
+                width: 16,
+                height: 16,
+                borderRadius: 4,
+                backgroundColor: theme.colors.primary,
+                transition: 'background-color 0.3s ease'
+              }} />
             </button>
-            <button
-              onClick={signOut}
-              title="Sign Out"
-              style={{
-                flex: 1,
-                padding: '8px',
-                borderRadius: 6,
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#9ca3af',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <LogOut style={{ width: 18, height: 18 }} />
-            </button>
+
+            {/* Theme Picker Dropdown */}
+            {themePickerOpen && (
+              <div style={{
+                position: 'absolute',
+                bottom: '100%',
+                left: 0,
+                right: 0,
+                marginBottom: 8,
+                backgroundColor: theme.colors.sidebar,
+                border: `1px solid ${theme.colors.sidebarBorder}`,
+                borderRadius: 10,
+                padding: 8,
+                boxShadow: '0 -4px 20px rgba(0,0,0,0.3)',
+                zIndex: 100
+              }}>
+                <div style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: theme.colors.sidebarTextMuted,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  padding: '4px 8px 8px',
+                }}>
+                  Choose Theme
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {Object.values(THEMES).map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setTheme(t.id as ThemeId);
+                        setThemePickerOpen(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '8px 10px',
+                        borderRadius: 6,
+                        border: 'none',
+                        cursor: 'pointer',
+                        backgroundColor: currentTheme === t.id ? theme.colors.sidebarActive : 'transparent',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <div style={{ display: 'flex', gap: 3 }}>
+                        <div style={{
+                          width: 14,
+                          height: 14,
+                          borderRadius: 3,
+                          backgroundColor: t.colors.sidebar
+                        }} />
+                        <div style={{
+                          width: 14,
+                          height: 14,
+                          borderRadius: 3,
+                          backgroundColor: t.colors.primary
+                        }} />
+                        <div style={{
+                          width: 14,
+                          height: 14,
+                          borderRadius: 3,
+                          backgroundColor: t.colors.accent
+                        }} />
+                      </div>
+                      <span style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: currentTheme === t.id ? theme.colors.sidebarActiveText : theme.colors.sidebarText
+                      }}>
+                        {t.name}
+                      </span>
+                      {t.isDark && (
+                        <span style={{
+                          fontSize: 10,
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          backgroundColor: 'rgba(255,255,255,0.1)',
+                          color: theme.colors.sidebarTextMuted
+                        }}>
+                          dark
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+
+          <button
+            onClick={signOut}
+            title="Sign Out"
+            style={{
+              width: '100%',
+              padding: '8px',
+              borderRadius: 6,
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              border: 'none',
+              cursor: 'pointer',
+              color: theme.colors.sidebarText,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              transition: 'all 0.3s ease',
+              fontSize: 13
+            }}
+          >
+            <LogOut style={{ width: 16, height: 16 }} />
+            Sign Out
+          </button>
+
           {appVersion && (
             <button
               onClick={updateStatus === "available" ? handleUpdate : handleVersionClick}
@@ -537,10 +757,10 @@ export function Dashboard() {
               style={{
                 marginTop: 12,
                 fontSize: 11,
-                color: updateStatus === "available" ? "#22c55e" :
-                       updateStatus === "latest" ? "#22c55e" :
-                       updateStatus === "error" ? "#ef4444" :
-                       updateStatus === "checking" ? "#a78bfa" : "#6b7280",
+                color: updateStatus === "available" ? theme.colors.success :
+                       updateStatus === "latest" ? theme.colors.success :
+                       updateStatus === "error" ? theme.colors.error :
+                       updateStatus === "checking" ? theme.colors.accent : theme.colors.sidebarTextMuted,
                 textAlign: 'center',
                 background: 'none',
                 border: 'none',
@@ -548,7 +768,7 @@ export function Dashboard() {
                 padding: '4px 8px',
                 borderRadius: 4,
                 width: '100%',
-                transition: 'all 0.15s ease'
+                transition: 'all 0.3s ease'
               }}
             >
               {updateStatus === "checking" && "Checking..."}
@@ -579,9 +799,10 @@ export function Dashboard() {
               {/* Tabs */}
               <div style={{
                 display: 'flex',
-                backgroundColor: '#e8e8ed',
+                backgroundColor: theme.colors.tabBg,
                 borderRadius: 8,
-                padding: 4
+                padding: 4,
+                transition: 'background-color 0.3s ease'
               }}>
                 {tabs.map((tab) => (
                   <button
@@ -597,10 +818,10 @@ export function Dashboard() {
                       cursor: 'pointer',
                       fontSize: 14,
                       fontWeight: 500,
-                      backgroundColor: activeTab === tab.id ? '#ffffff' : 'transparent',
-                      color: activeTab === tab.id ? '#1e1e2e' : '#6b7280',
-                      boxShadow: activeTab === tab.id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                      transition: 'all 0.2s'
+                      backgroundColor: activeTab === tab.id ? theme.colors.tabActiveBg : 'transparent',
+                      color: activeTab === tab.id ? theme.colors.tabActiveText : theme.colors.textMuted,
+                      boxShadow: activeTab === tab.id ? (theme.isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.1)') : 'none',
+                      transition: 'all 0.3s ease'
                     }}
                   >
                     {tab.icon}
@@ -610,8 +831,9 @@ export function Dashboard() {
                         padding: '2px 8px',
                         borderRadius: 999,
                         fontSize: 12,
-                        backgroundColor: activeTab === tab.id ? 'rgba(124, 58, 237, 0.15)' : 'rgba(0,0,0,0.08)',
-                        color: activeTab === tab.id ? '#7c3aed' : '#6b7280'
+                        backgroundColor: activeTab === tab.id ? theme.colors.primaryLight : theme.colors.pillBg,
+                        color: activeTab === tab.id ? theme.colors.primary : theme.colors.pillText,
+                        transition: 'all 0.3s ease'
                       }}>
                         {tab.count}
                       </span>
@@ -634,8 +856,9 @@ export function Dashboard() {
                 alignItems: 'center',
                 gap: 6,
                 fontSize: 13,
-                color: '#6b7280',
-                marginRight: 4
+                color: theme.colors.textMuted,
+                marginRight: 4,
+                transition: 'color 0.3s ease'
               }}>
                 <Tag style={{ width: 14, height: 14 }} />
                 Filter:
@@ -654,9 +877,9 @@ export function Dashboard() {
                   cursor: 'pointer',
                   fontSize: 12,
                   fontWeight: 500,
-                  backgroundColor: selectedCategory === null ? '#7c3aed' : '#e8e8ed',
-                  color: selectedCategory === null ? '#fff' : '#6b7280',
-                  transition: 'all 0.15s ease'
+                  backgroundColor: selectedCategory === null ? theme.colors.primary : theme.colors.pillBg,
+                  color: selectedCategory === null ? theme.colors.textInverse : theme.colors.pillText,
+                  transition: 'all 0.3s ease'
                 }}
               >
                 All
@@ -677,9 +900,9 @@ export function Dashboard() {
                     cursor: 'pointer',
                     fontSize: 12,
                     fontWeight: 500,
-                    backgroundColor: selectedCategory === key ? `${val.color}20` : '#e8e8ed',
-                    color: selectedCategory === key ? val.color : '#6b7280',
-                    transition: 'all 0.15s ease'
+                    backgroundColor: selectedCategory === key ? `${val.color}20` : theme.colors.pillBg,
+                    color: selectedCategory === key ? val.color : theme.colors.pillText,
+                    transition: 'all 0.3s ease'
                   }}
                 >
                   {val.label}
@@ -700,35 +923,16 @@ export function Dashboard() {
                     borderRadius: '50%',
                     border: 'none',
                     cursor: 'pointer',
-                    backgroundColor: 'rgba(107, 114, 128, 0.15)',
-                    color: '#6b7280',
+                    backgroundColor: theme.colors.pillBg,
+                    color: theme.colors.pillText,
                     marginLeft: 4,
-                    transition: 'all 0.15s ease'
+                    transition: 'all 0.3s ease'
                   }}
                 >
                   <X style={{ width: 14, height: 14 }} />
                 </button>
               )}
             </div>
-
-            {/* Info box for Implemented tab */}
-            {activeTab === "implemented" && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '12px 16px',
-                marginBottom: 24,
-                backgroundColor: 'rgba(59, 130, 246, 0.08)',
-                borderRadius: 10,
-                border: '1px solid rgba(59, 130, 246, 0.2)',
-              }}>
-                <Info style={{ width: 18, height: 18, color: '#3b82f6', flexShrink: 0 }} />
-                <p style={{ margin: 0, fontSize: 13, color: '#3b82f6', lineHeight: 1.5 }}>
-                  Implemented tasks are automatically removed after 7 days. Move tasks back to Completed or Pending if you need to keep them longer.
-                </p>
-              </div>
-            )}
 
             {/* Asset List */}
             <AssetList status={activeTab} category={selectedCategory} />
@@ -768,9 +972,26 @@ export function Dashboard() {
           </main>
         )}
 
-        {mainView === "sprints" && (
+        {mainView === "goals" && (
           <main style={{ maxWidth: 1152, margin: '0 auto', padding: '32px 24px' }}>
-            <SprintsView />
+            <GoalsDashboard
+              onNavigateToInbox={() => setMainView("inbox")}
+              onNavigateToTask={(taskId) => setPendingTaskId(taskId)}
+            />
+          </main>
+        )}
+
+        {mainView === "inbox" && (
+          <main style={{ maxWidth: 1152, margin: '0 auto', padding: '32px 24px' }}>
+            <InboxView
+              onNavigateToTask={(taskId) => setPendingTaskId(taskId)}
+            />
+          </main>
+        )}
+
+        {mainView === "bulletin" && (
+          <main style={{ maxWidth: 1152, margin: '0 auto', padding: '32px 24px' }}>
+            <BulletinView />
           </main>
         )}
 
@@ -794,8 +1015,8 @@ export function Dashboard() {
           markAsCompleted.mutate(id);
           handleCloseNavigatedTask();
         }}
-        onMarkImplemented={(id) => {
-          markAsImplemented.mutate(id);
+        onMarkBlocked={(id, reason) => {
+          markAsBlocked.mutate({ id, reason });
           handleCloseNavigatedTask();
         }}
         onMoveToPending={(id) => {
@@ -806,8 +1027,8 @@ export function Dashboard() {
           moveToInProgress.mutate(id);
           handleCloseNavigatedTask();
         }}
-        onMoveToCompleted={(id) => {
-          moveToCompleted.mutate(id);
+        onUnblock={(id) => {
+          unblockAsset.mutate(id);
           handleCloseNavigatedTask();
         }}
         onUpdate={(id, data) => {

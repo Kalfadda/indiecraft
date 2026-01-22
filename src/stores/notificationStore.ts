@@ -6,7 +6,7 @@ export type NotificationType =
   | "task_created"
   | "task_completed"
   | "task_in_progress"
-  | "task_implemented"
+  | "task_blocked"
   | "task_claimed"
   | "task_unclaimed"
   | "schedule_created"
@@ -129,11 +129,11 @@ const notificationConfigs: Record<
     messageOther: (actor, name) => `${actor} started "${name}"`,
     variant: "info",
   },
-  task_implemented: {
-    title: "Task Implemented",
-    messageOwn: (name) => `You implemented "${name}"`,
-    messageOther: (actor, name) => `${actor} implemented "${name}"`,
-    variant: "success",
+  task_blocked: {
+    title: "Task Blocked",
+    messageOwn: (name) => `You blocked "${name}"`,
+    messageOther: (actor, name) => `${actor} blocked "${name}"`,
+    variant: "warning",
   },
   task_claimed: {
     title: "Task Claimed",

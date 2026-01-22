@@ -12,8 +12,8 @@ export type AssetCategory =
 // Priority levels
 export type AssetPriority = "low" | "medium" | "high" | "critical";
 
-// Asset status workflow: pending -> in_progress -> completed -> implemented
-export type AssetStatus = "pending" | "in_progress" | "completed" | "implemented";
+// Asset status workflow: blocked | pending -> in_progress -> completed
+export type AssetStatus = "blocked" | "pending" | "in_progress" | "completed";
 
 // Category metadata for UI
 export const ASSET_CATEGORIES: Record<AssetCategory, { label: string; color: string }> = {
@@ -66,17 +66,19 @@ export const FEATURE_REQUEST_STATUSES: Record<FeatureRequestStatus, { label: str
   denied: { label: "Denied", color: "#ef4444" },
 };
 
-// Sprint status workflow: active -> completed
-export type SprintStatus = "active" | "completed";
+// Goal status workflow: active -> completed
+export type GoalStatus = "active" | "completed";
 
 // Persistent notification types (for activity log)
 export type PersistentNotificationType =
   | "task_created"
   | "task_completed"
   | "task_in_progress"
-  | "task_implemented"
+  | "task_blocked"
   | "task_claimed"
   | "task_unclaimed"
+  | "goal_created"
+  | "goal_completed"
   | "schedule_created"
   | "schedule_updated"
   | "model_request_created"
@@ -89,8 +91,8 @@ export type PersistentNotificationType =
 
 export type PersistentNotificationVariant = "success" | "info" | "warning" | "error";
 
-// Sprint status metadata for UI
-export const SPRINT_STATUSES: Record<SprintStatus, { label: string; color: string }> = {
+// Goal status metadata for UI
+export const GOAL_STATUSES: Record<GoalStatus, { label: string; color: string }> = {
   active: { label: "Active", color: "#7c3aed" },
   completed: { label: "Completed", color: "#16a34a" },
 };
@@ -138,15 +140,17 @@ export type Database = {
           status: AssetStatus;
           category: AssetCategory | null;
           priority: AssetPriority | null;
+          goal_id: string | null;
           created_by: string | null;
           in_progress_by: string | null;
           in_progress_at: string | null;
           completed_by: string | null;
           completed_at: string | null;
-          implemented_by: string | null;
-          implemented_at: string | null;
           claimed_by: string | null;
           claimed_at: string | null;
+          blocked_by: string | null;
+          blocked_at: string | null;
+          blocked_reason: string | null;
           eta_date: string | null;
           created_at: string;
           updated_at: string;
@@ -158,15 +162,17 @@ export type Database = {
           status?: AssetStatus;
           category?: AssetCategory | null;
           priority?: AssetPriority | null;
+          goal_id?: string | null;
           created_by?: string | null;
           in_progress_by?: string | null;
           in_progress_at?: string | null;
           completed_by?: string | null;
           completed_at?: string | null;
-          implemented_by?: string | null;
-          implemented_at?: string | null;
           claimed_by?: string | null;
           claimed_at?: string | null;
+          blocked_by?: string | null;
+          blocked_at?: string | null;
+          blocked_reason?: string | null;
           eta_date?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -178,15 +184,17 @@ export type Database = {
           status?: AssetStatus;
           category?: AssetCategory | null;
           priority?: AssetPriority | null;
+          goal_id?: string | null;
           created_by?: string | null;
           in_progress_by?: string | null;
           in_progress_at?: string | null;
           completed_by?: string | null;
           completed_at?: string | null;
-          implemented_by?: string | null;
-          implemented_at?: string | null;
           claimed_by?: string | null;
           claimed_at?: string | null;
+          blocked_by?: string | null;
+          blocked_at?: string | null;
+          blocked_reason?: string | null;
           eta_date?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -202,6 +210,7 @@ export type Database = {
           event_time: string | null;
           visibility: EventVisibility | null;
           linked_asset_id: string | null;
+          linked_goal_id: string | null;
           auto_create_task: boolean;
           created_by: string | null;
           created_at: string;
@@ -216,6 +225,7 @@ export type Database = {
           event_time?: string | null;
           visibility?: EventVisibility | null;
           linked_asset_id?: string | null;
+          linked_goal_id?: string | null;
           auto_create_task?: boolean;
           created_by?: string | null;
           created_at?: string;
@@ -230,6 +240,7 @@ export type Database = {
           event_time?: string | null;
           visibility?: EventVisibility | null;
           linked_asset_id?: string | null;
+          linked_goal_id?: string | null;
           auto_create_task?: boolean;
           created_by?: string | null;
           created_at?: string;
@@ -340,7 +351,7 @@ export type Database = {
         Row: {
           id: string;
           asset_id: string | null;
-          sprint_id: string | null;
+          goal_id: string | null;
           content: string;
           created_by: string;
           created_at: string;
@@ -349,7 +360,7 @@ export type Database = {
         Insert: {
           id?: string;
           asset_id?: string | null;
-          sprint_id?: string | null;
+          goal_id?: string | null;
           content: string;
           created_by: string;
           created_at?: string;
@@ -358,19 +369,21 @@ export type Database = {
         Update: {
           id?: string;
           asset_id?: string | null;
-          sprint_id?: string | null;
+          goal_id?: string | null;
           content?: string;
           created_by?: string;
           created_at?: string;
           updated_at?: string;
         };
       };
-      sprints: {
+      goals: {
         Row: {
           id: string;
           name: string;
           description: string | null;
-          status: SprintStatus;
+          status: GoalStatus;
+          priority: string | null;
+          target_date: string | null;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -380,7 +393,9 @@ export type Database = {
           id?: string;
           name: string;
           description?: string | null;
-          status?: SprintStatus;
+          status?: GoalStatus;
+          priority?: string | null;
+          target_date?: string | null;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -390,17 +405,19 @@ export type Database = {
           id?: string;
           name?: string;
           description?: string | null;
-          status?: SprintStatus;
+          status?: GoalStatus;
+          priority?: string | null;
+          target_date?: string | null;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
           completed_at?: string | null;
         };
       };
-      sprint_tasks: {
+      goal_tasks: {
         Row: {
           id: string;
-          sprint_id: string;
+          goal_id: string;
           asset_id: string;
           order_index: number;
           notes: string | null;
@@ -408,7 +425,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          sprint_id: string;
+          goal_id: string;
           asset_id: string;
           order_index?: number;
           notes?: string | null;
@@ -416,7 +433,7 @@ export type Database = {
         };
         Update: {
           id?: string;
-          sprint_id?: string;
+          goal_id?: string;
           asset_id?: string;
           order_index?: number;
           notes?: string | null;
@@ -428,21 +445,21 @@ export type Database = {
           id: string;
           dependent_task_id: string;
           dependency_task_id: string;
-          sprint_id: string | null;
+          goal_id: string | null;
           created_at: string;
         };
         Insert: {
           id?: string;
           dependent_task_id: string;
           dependency_task_id: string;
-          sprint_id?: string | null;
+          goal_id?: string | null;
           created_at?: string;
         };
         Update: {
           id?: string;
           dependent_task_id?: string;
           dependency_task_id?: string;
-          sprint_id?: string | null;
+          goal_id?: string | null;
           created_at?: string;
         };
       };
@@ -487,6 +504,41 @@ export type Database = {
           created_at?: string;
         };
       };
+      bulletins: {
+        Row: {
+          id: string;
+          message: string;
+          position_x: number;
+          position_y: number;
+          rotation: number;
+          color: string;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          message: string;
+          position_x?: number;
+          position_y?: number;
+          rotation?: number;
+          color?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          message?: string;
+          position_x?: number;
+          position_y?: number;
+          rotation?: number;
+          color?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
   };
 };
@@ -512,13 +564,13 @@ export type Comment = Database["public"]["Tables"]["comments"]["Row"];
 export type CommentInsert = Database["public"]["Tables"]["comments"]["Insert"];
 export type CommentUpdate = Database["public"]["Tables"]["comments"]["Update"];
 
-export type Sprint = Database["public"]["Tables"]["sprints"]["Row"];
-export type SprintInsert = Database["public"]["Tables"]["sprints"]["Insert"];
-export type SprintUpdate = Database["public"]["Tables"]["sprints"]["Update"];
+export type Goal = Database["public"]["Tables"]["goals"]["Row"];
+export type GoalInsert = Database["public"]["Tables"]["goals"]["Insert"];
+export type GoalUpdate = Database["public"]["Tables"]["goals"]["Update"];
 
-export type SprintTask = Database["public"]["Tables"]["sprint_tasks"]["Row"];
-export type SprintTaskInsert = Database["public"]["Tables"]["sprint_tasks"]["Insert"];
-export type SprintTaskUpdate = Database["public"]["Tables"]["sprint_tasks"]["Update"];
+export type GoalTask = Database["public"]["Tables"]["goal_tasks"]["Row"];
+export type GoalTaskInsert = Database["public"]["Tables"]["goal_tasks"]["Insert"];
+export type GoalTaskUpdate = Database["public"]["Tables"]["goal_tasks"]["Update"];
 
 export type TaskDependency = Database["public"]["Tables"]["task_dependencies"]["Row"];
 export type TaskDependencyInsert = Database["public"]["Tables"]["task_dependencies"]["Insert"];
@@ -527,3 +579,7 @@ export type TaskDependencyUpdate = Database["public"]["Tables"]["task_dependenci
 export type PersistentNotification = Database["public"]["Tables"]["notifications"]["Row"];
 export type PersistentNotificationInsert = Database["public"]["Tables"]["notifications"]["Insert"];
 export type PersistentNotificationUpdate = Database["public"]["Tables"]["notifications"]["Update"];
+
+export type Bulletin = Database["public"]["Tables"]["bulletins"]["Row"];
+export type BulletinInsert = Database["public"]["Tables"]["bulletins"]["Insert"];
+export type BulletinUpdate = Database["public"]["Tables"]["bulletins"]["Update"];

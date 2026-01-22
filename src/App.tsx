@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthPage, ProtectedRoute } from "./features/auth";
 import { Dashboard } from "./features/assets";
-import { AdminPanel } from "./features/admin";
 import { NotificationContainer } from "./components/notifications";
 import { sendHeartbeat } from "./lib/heartbeat";
 
@@ -31,7 +30,6 @@ function App() {
           <Route path="/login" element={<AuthPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/admin" element={<AdminPanel />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from "motion/react";
 import { useFeatureRequestMutations } from "../hooks/useFeatureRequestMutations";
 import { Plus, Loader2, X, Check, Flag, ChevronDown } from "lucide-react";
 import { ASSET_PRIORITIES, type AssetPriority } from "@/types/database";
+import { useTheme } from "@/stores/themeStore";
 
 interface FeatureRequestFormProps {
   onSuccess?: () => void;
 }
 
 export function FeatureRequestForm({ onSuccess }: FeatureRequestFormProps) {
+  const theme = useTheme();
   const { createRequest } = useFeatureRequestMutations();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
@@ -61,10 +63,10 @@ export function FeatureRequestForm({ onSuccess }: FeatureRequestFormProps) {
     borderRadius: 8,
     border: 'none',
     cursor: 'pointer',
-    backgroundColor: '#06b6d4',
+    backgroundColor: theme.colors.primary,
     color: '#fff',
     boxShadow: '0 4px 14px rgba(6, 182, 212, 0.25)',
-    transition: 'background-color 0.2s'
+    transition: 'all 0.3s ease'
   };
 
   return (
@@ -80,8 +82,8 @@ export function FeatureRequestForm({ onSuccess }: FeatureRequestFormProps) {
             <button
               onClick={() => setIsOpen(true)}
               style={buttonStyle}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#0891b2'}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#06b6d4'}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = theme.colors.primaryHover}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = theme.colors.primary}
             >
               <Plus style={{ marginRight: 8, width: 20, height: 20 }} />
               New Request
@@ -99,19 +101,21 @@ export function FeatureRequestForm({ onSuccess }: FeatureRequestFormProps) {
               width: '100%',
               maxWidth: 500,
               borderRadius: 12,
-              border: '1px solid #e5e5eb',
-              backgroundColor: '#ffffff',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)'
+              border: `1px solid ${theme.colors.border}`,
+              backgroundColor: theme.colors.card,
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+              transition: 'all 0.3s ease'
             }}>
               {/* Header */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                borderBottom: '1px solid #e5e5eb',
-                padding: '20px 28px'
+                borderBottom: `1px solid ${theme.colors.border}`,
+                padding: '20px 28px',
+                transition: 'all 0.3s ease'
               }}>
-                <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e1e2e', margin: 0 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 600, color: theme.colors.text, margin: 0, transition: 'all 0.3s ease' }}>
                   New Feature Request
                 </h3>
                 <button
@@ -122,10 +126,11 @@ export function FeatureRequestForm({ onSuccess }: FeatureRequestFormProps) {
                     backgroundColor: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
-                    color: '#9ca3af',
+                    color: theme.colors.textMuted,
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    transition: 'all 0.3s ease'
                   }}
                 >
                   <X style={{ width: 20, height: 20 }} />
@@ -165,7 +170,7 @@ export function FeatureRequestForm({ onSuccess }: FeatureRequestFormProps) {
                       >
                         <Check style={{ width: 32, height: 32, color: '#16a34a' }} />
                       </motion.div>
-                      <p style={{ fontWeight: 500, color: '#1e1e2e', margin: 0 }}>Request submitted!</p>
+                      <p style={{ fontWeight: 500, color: theme.colors.text, margin: 0, transition: 'all 0.3s ease' }}>Request submitted!</p>
                     </motion.div>
                   ) : (
                     <motion.form
@@ -179,8 +184,9 @@ export function FeatureRequestForm({ onSuccess }: FeatureRequestFormProps) {
                           display: 'block',
                           fontSize: 14,
                           fontWeight: 500,
-                          color: '#4b5563',
-                          marginBottom: 10
+                          color: theme.colors.textMuted,
+                          marginBottom: 10,
+                          transition: 'all 0.3s ease'
                         }}>
                           Feature Name
                         </label>
@@ -195,12 +201,13 @@ export function FeatureRequestForm({ onSuccess }: FeatureRequestFormProps) {
                             width: '100%',
                             padding: '12px 14px',
                             borderRadius: 8,
-                            border: '1px solid #e5e5eb',
-                            backgroundColor: '#f9fafb',
-                            color: '#1e1e2e',
+                            border: `1px solid ${theme.colors.border}`,
+                            backgroundColor: theme.colors.inputBg,
+                            color: theme.colors.text,
                             fontSize: 14,
                             outline: 'none',
-                            boxSizing: 'border-box'
+                            boxSizing: 'border-box',
+                            transition: 'all 0.3s ease'
                           }}
                         />
                       </div>
@@ -209,8 +216,9 @@ export function FeatureRequestForm({ onSuccess }: FeatureRequestFormProps) {
                           display: 'block',
                           fontSize: 14,
                           fontWeight: 500,
-                          color: '#4b5563',
-                          marginBottom: 10
+                          color: theme.colors.textMuted,
+                          marginBottom: 10,
+                          transition: 'all 0.3s ease'
                         }}>
                           Description
                         </label>
@@ -224,15 +232,16 @@ export function FeatureRequestForm({ onSuccess }: FeatureRequestFormProps) {
                             width: '100%',
                             padding: '12px 14px',
                             borderRadius: 8,
-                            border: '1px solid #e5e5eb',
-                            backgroundColor: '#f9fafb',
-                            color: '#1e1e2e',
+                            border: `1px solid ${theme.colors.border}`,
+                            backgroundColor: theme.colors.inputBg,
+                            color: theme.colors.text,
                             fontSize: 14,
                             outline: 'none',
                             resize: 'vertical',
                             fontFamily: 'inherit',
                             boxSizing: 'border-box',
-                            minHeight: 100
+                            minHeight: 100,
+                            transition: 'all 0.3s ease'
                           }}
                         />
                       </div>
@@ -245,8 +254,9 @@ export function FeatureRequestForm({ onSuccess }: FeatureRequestFormProps) {
                           gap: 6,
                           fontSize: 14,
                           fontWeight: 500,
-                          color: '#4b5563',
-                          marginBottom: 10
+                          color: theme.colors.textMuted,
+                          marginBottom: 10,
+                          transition: 'all 0.3s ease'
                         }}>
                           <Flag style={{ width: 14, height: 14 }} />
                           Priority
@@ -260,14 +270,15 @@ export function FeatureRequestForm({ onSuccess }: FeatureRequestFormProps) {
                               width: '100%',
                               padding: '12px 36px 12px 14px',
                               borderRadius: 8,
-                              border: '1px solid #e5e5eb',
-                              backgroundColor: '#f9fafb',
-                              color: priority ? '#1e1e2e' : '#9ca3af',
+                              border: `1px solid ${theme.colors.border}`,
+                              backgroundColor: theme.colors.inputBg,
+                              color: priority ? theme.colors.text : theme.colors.textMuted,
                               fontSize: 14,
                               outline: 'none',
                               appearance: 'none',
                               cursor: 'pointer',
-                              boxSizing: 'border-box'
+                              boxSizing: 'border-box',
+                              transition: 'all 0.3s ease'
                             }}
                           >
                             <option value="">Select priority...</option>
@@ -282,8 +293,9 @@ export function FeatureRequestForm({ onSuccess }: FeatureRequestFormProps) {
                             transform: 'translateY(-50%)',
                             width: 16,
                             height: 16,
-                            color: '#9ca3af',
-                            pointerEvents: 'none'
+                            color: theme.colors.textMuted,
+                            pointerEvents: 'none',
+                            transition: 'all 0.3s ease'
                           }} />
                         </div>
                       </div>
@@ -309,12 +321,13 @@ export function FeatureRequestForm({ onSuccess }: FeatureRequestFormProps) {
                             flex: 1,
                             padding: '12px 18px',
                             borderRadius: 8,
-                            border: '1px solid #e5e5eb',
+                            border: `1px solid ${theme.colors.border}`,
                             backgroundColor: 'transparent',
-                            color: '#6b7280',
+                            color: theme.colors.textMuted,
                             fontSize: 14,
                             fontWeight: 500,
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease'
                           }}
                         >
                           Cancel
@@ -330,12 +343,13 @@ export function FeatureRequestForm({ onSuccess }: FeatureRequestFormProps) {
                             padding: '12px 18px',
                             borderRadius: 8,
                             border: 'none',
-                            backgroundColor: createRequest.isPending || !name.trim() ? '#67e8f9' : '#06b6d4',
+                            backgroundColor: createRequest.isPending || !name.trim() ? theme.colors.primaryHover : theme.colors.primary,
                             color: '#fff',
                             fontSize: 14,
                             fontWeight: 500,
                             cursor: createRequest.isPending || !name.trim() ? 'not-allowed' : 'pointer',
-                            opacity: createRequest.isPending || !name.trim() ? 0.7 : 1
+                            opacity: createRequest.isPending || !name.trim() ? 0.7 : 1,
+                            transition: 'all 0.3s ease'
                           }}
                         >
                           {createRequest.isPending ? (

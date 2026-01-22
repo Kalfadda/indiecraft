@@ -6,9 +6,6 @@ import {
   TrendingUp,
   Star,
   BarChart3,
-  CheckCircle2,
-  Clock,
-  Archive,
 } from "lucide-react";
 import {
   ASSET_CATEGORIES,
@@ -42,13 +39,12 @@ export function Compare() {
 
   // Calculate stats for a category
   function getCategoryStats(assets: typeof assetsA) {
-    if (!assets) return { total: 0, pending: 0, completed: 0, implemented: 0, completionRate: 0 };
+    if (!assets) return { total: 0, pending: 0, completed: 0, completionRate: 0 };
     const total = assets.length;
     const pending = assets.filter(a => a.status === "pending").length;
     const completed = assets.filter(a => a.status === "completed").length;
-    const implemented = assets.filter(a => a.status === "implemented").length;
-    const completionRate = total > 0 ? Math.round(((completed + implemented) / total) * 100) : 0;
-    return { total, pending, completed, implemented, completionRate };
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { total, pending, completed, completionRate };
   }
 
   const statsA = getCategoryStats(assetsA);
@@ -75,13 +71,6 @@ export function Compare() {
       categoryA: statsA.completed,
       categoryB: statsB.completed,
       categoryC: categoryC ? statsC.completed : null,
-      higherIsBetter: true,
-    },
-    {
-      label: "Implemented",
-      categoryA: statsA.implemented,
-      categoryB: statsB.implemented,
-      categoryC: categoryC ? statsC.implemented : null,
       higherIsBetter: true,
     },
     {

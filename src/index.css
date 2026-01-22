@@ -24,7 +24,7 @@
 
   /* Status colors */
   --color-status-pending: hsl(45 93% 47%);
-  --color-status-implemented: hsl(142 76% 36%);
+  --color-status-completed: hsl(142 76% 36%);
 
   /* Radius */
   --radius-sm: 0.25rem;

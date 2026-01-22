@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useTheme } from "@/stores/themeStore";
 
 interface CalendarEvent {
   id: string;
@@ -47,6 +48,7 @@ function formatDateKey(date: Date): string {
 }
 
 export function Calendar({ events, onDayClick, selectedDate }: CalendarProps) {
+  const theme = useTheme();
   const today = useMemo(() => new Date(), []);
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
@@ -158,10 +160,11 @@ export function Calendar({ events, onDayClick, selectedDate }: CalendarProps) {
   };
 
   const containerStyle: React.CSSProperties = {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
-    border: "1px solid #e5e5eb",
+    border: `1px solid ${theme.colors.border}`,
     overflow: "hidden",
+    transition: "all 0.3s ease",
   };
 
   const headerStyle: React.CSSProperties = {
@@ -169,7 +172,8 @@ export function Calendar({ events, onDayClick, selectedDate }: CalendarProps) {
     alignItems: "center",
     justifyContent: "space-between",
     padding: "16px 20px",
-    borderBottom: "1px solid #e5e5eb",
+    borderBottom: `1px solid ${theme.colors.border}`,
+    transition: "all 0.3s ease",
   };
 
   const navButtonStyle: React.CSSProperties = {
@@ -179,29 +183,30 @@ export function Calendar({ events, onDayClick, selectedDate }: CalendarProps) {
     width: 36,
     height: 36,
     borderRadius: 8,
-    border: "1px solid #e5e5eb",
-    backgroundColor: "#fff",
+    border: `1px solid ${theme.colors.border}`,
+    backgroundColor: theme.colors.card,
     cursor: "pointer",
-    transition: "all 0.15s ease",
+    transition: "all 0.3s ease",
   };
 
   const todayButtonStyle: React.CSSProperties = {
     padding: "6px 12px",
     borderRadius: 6,
-    border: "1px solid #e5e5eb",
-    backgroundColor: "#fff",
+    border: `1px solid ${theme.colors.border}`,
+    backgroundColor: theme.colors.card,
     fontSize: 13,
     fontWeight: 500,
-    color: "#6b7280",
+    color: theme.colors.textMuted,
     cursor: "pointer",
-    transition: "all 0.15s ease",
+    transition: "all 0.3s ease",
   };
 
   const weekdayHeaderStyle: React.CSSProperties = {
     display: "grid",
     gridTemplateColumns: "repeat(7, 1fr)",
-    borderBottom: "1px solid #e5e5eb",
-    backgroundColor: "#f9fafb",
+    borderBottom: `1px solid ${theme.colors.border}`,
+    backgroundColor: theme.colors.backgroundSecondary,
+    transition: "all 0.3s ease",
   };
 
   const weekdayCellStyle: React.CSSProperties = {
@@ -209,7 +214,7 @@ export function Calendar({ events, onDayClick, selectedDate }: CalendarProps) {
     textAlign: "center",
     fontSize: 12,
     fontWeight: 600,
-    color: "#6b7280",
+    color: theme.colors.textMuted,
     textTransform: "uppercase",
     letterSpacing: "0.5px",
   };
@@ -224,19 +229,19 @@ export function Calendar({ events, onDayClick, selectedDate }: CalendarProps) {
       {/* Header */}
       <div style={headerStyle}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: "#1e1e2e" }}>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: theme.colors.text, transition: "all 0.3s ease" }}>
             {MONTHS[currentMonth]} {currentYear}
           </h2>
           <button
             onClick={goToToday}
             style={todayButtonStyle}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#f4f4f7";
-              e.currentTarget.style.borderColor = "#d1d5db";
+              e.currentTarget.style.backgroundColor = theme.colors.cardHover;
+              e.currentTarget.style.borderColor = theme.colors.textMuted;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#fff";
-              e.currentTarget.style.borderColor = "#e5e5eb";
+              e.currentTarget.style.backgroundColor = theme.colors.card;
+              e.currentTarget.style.borderColor = theme.colors.border;
             }}
           >
             Today
@@ -247,29 +252,29 @@ export function Calendar({ events, onDayClick, selectedDate }: CalendarProps) {
             onClick={goToPreviousMonth}
             style={navButtonStyle}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#f4f4f7";
-              e.currentTarget.style.borderColor = "#d1d5db";
+              e.currentTarget.style.backgroundColor = theme.colors.cardHover;
+              e.currentTarget.style.borderColor = theme.colors.textMuted;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#fff";
-              e.currentTarget.style.borderColor = "#e5e5eb";
+              e.currentTarget.style.backgroundColor = theme.colors.card;
+              e.currentTarget.style.borderColor = theme.colors.border;
             }}
           >
-            <ChevronLeft style={{ width: 18, height: 18, color: "#6b7280" }} />
+            <ChevronLeft style={{ width: 18, height: 18, color: theme.colors.textMuted }} />
           </button>
           <button
             onClick={goToNextMonth}
             style={navButtonStyle}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#f4f4f7";
-              e.currentTarget.style.borderColor = "#d1d5db";
+              e.currentTarget.style.backgroundColor = theme.colors.cardHover;
+              e.currentTarget.style.borderColor = theme.colors.textMuted;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#fff";
-              e.currentTarget.style.borderColor = "#e5e5eb";
+              e.currentTarget.style.backgroundColor = theme.colors.card;
+              e.currentTarget.style.borderColor = theme.colors.border;
             }}
           >
-            <ChevronRight style={{ width: 18, height: 18, color: "#6b7280" }} />
+            <ChevronRight style={{ width: 18, height: 18, color: theme.colors.textMuted }} />
           </button>
         </div>
       </div>
@@ -289,11 +294,11 @@ export function Calendar({ events, onDayClick, selectedDate }: CalendarProps) {
           const dayCellStyle: React.CSSProperties = {
             minHeight: 80,
             padding: 8,
-            borderRight: (index + 1) % 7 === 0 ? "none" : "1px solid #e5e5eb",
-            borderBottom: index < 35 ? "1px solid #e5e5eb" : "none",
-            backgroundColor: day.isCurrentMonth ? "#fff" : "#f9fafb",
+            borderRight: (index + 1) % 7 === 0 ? "none" : `1px solid ${theme.colors.border}`,
+            borderBottom: index < 35 ? `1px solid ${theme.colors.border}` : "none",
+            backgroundColor: day.isCurrentMonth ? theme.colors.card : theme.colors.backgroundSecondary,
             cursor: "pointer",
-            transition: "background-color 0.15s ease",
+            transition: "all 0.3s ease",
             position: "relative",
             overflow: "hidden",
           };
@@ -308,16 +313,16 @@ export function Calendar({ events, onDayClick, selectedDate }: CalendarProps) {
             fontSize: 13,
             fontWeight: day.isToday ? 600 : 400,
             color: day.isToday
-              ? "#fff"
+              ? theme.colors.textInverse
               : day.isCurrentMonth
-              ? "#1e1e2e"
-              : "#9ca3af",
+              ? theme.colors.text
+              : theme.colors.textMuted,
             backgroundColor: day.isToday
-              ? "#7c3aed"
+              ? theme.colors.primary
               : day.isSelected
-              ? "rgba(124, 58, 237, 0.15)"
+              ? theme.colors.primaryLight
               : "transparent",
-            transition: "all 0.15s ease",
+            transition: "all 0.3s ease",
           };
 
           const eventsContainerStyle: React.CSSProperties = {
@@ -341,14 +346,14 @@ export function Calendar({ events, onDayClick, selectedDate }: CalendarProps) {
               onMouseEnter={(e) => {
                 if (!day.isToday) {
                   e.currentTarget.style.backgroundColor = day.isCurrentMonth
-                    ? "#f4f4f7"
-                    : "#f0f0f5";
+                    ? theme.colors.cardHover
+                    : theme.colors.borderLight;
                 }
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = day.isCurrentMonth
-                  ? "#fff"
-                  : "#f9fafb";
+                  ? theme.colors.card
+                  : theme.colors.backgroundSecondary;
               }}
             >
               <div style={dayNumberStyle}>{day.date.getDate()}</div>
@@ -399,7 +404,7 @@ export function Calendar({ events, onDayClick, selectedDate }: CalendarProps) {
                     <span
                       style={{
                         fontSize: 10,
-                        color: "#6b7280",
+                        color: theme.colors.textMuted,
                         paddingLeft: 6,
                       }}
                     >

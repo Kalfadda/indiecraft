@@ -16,8 +16,6 @@ const badgeVariants = cva(
         outline: "text-foreground",
         pending:
           "border-transparent bg-status-pending/20 text-status-pending",
-        implemented:
-          "border-transparent bg-status-implemented/20 text-status-implemented",
       },
     },
     defaultVariants: {

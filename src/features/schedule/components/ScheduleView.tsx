@@ -5,6 +5,7 @@ import { EventCard } from "./EventCard";
 import { useEvents } from "../hooks/useEvents";
 import { useEventMutations } from "../hooks/useEventMutations";
 import { useEventRealtime } from "../hooks/useEventRealtime";
+import { useTheme } from "@/stores/themeStore";
 import {
   Plus,
   Filter,
@@ -20,6 +21,7 @@ import type { Event, EventInsert, EventType } from "@/types/database";
 type ViewMode = "calendar" | "list";
 
 export function ScheduleView() {
+  const theme = useTheme();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
@@ -112,10 +114,11 @@ export function ScheduleView() {
   ];
 
   const cardStyle: React.CSSProperties = {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
-    border: "1px solid #e5e5eb",
+    border: `1px solid ${theme.colors.border}`,
     overflow: "hidden",
+    transition: "all 0.3s ease",
   };
 
   return (
@@ -159,9 +162,10 @@ export function ScheduleView() {
           <div
             style={{
               display: "flex",
-              backgroundColor: "#e8e8ed",
+              backgroundColor: theme.colors.tabBg,
               borderRadius: 8,
               padding: 4,
+              transition: "all 0.3s ease",
             }}
           >
             <button
@@ -176,10 +180,10 @@ export function ScheduleView() {
                 cursor: "pointer",
                 fontSize: 13,
                 fontWeight: 500,
-                backgroundColor: viewMode === "calendar" ? "#fff" : "transparent",
-                color: viewMode === "calendar" ? "#1e1e2e" : "#6b7280",
+                backgroundColor: viewMode === "calendar" ? theme.colors.tabActiveBg : "transparent",
+                color: viewMode === "calendar" ? theme.colors.tabActiveText : theme.colors.textMuted,
                 boxShadow: viewMode === "calendar" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                transition: "all 0.15s ease",
+                transition: "all 0.3s ease",
               }}
             >
               <CalendarDays style={{ width: 16, height: 16 }} />
@@ -197,10 +201,10 @@ export function ScheduleView() {
                 cursor: "pointer",
                 fontSize: 13,
                 fontWeight: 500,
-                backgroundColor: viewMode === "list" ? "#fff" : "transparent",
-                color: viewMode === "list" ? "#1e1e2e" : "#6b7280",
+                backgroundColor: viewMode === "list" ? theme.colors.tabActiveBg : "transparent",
+                color: viewMode === "list" ? theme.colors.tabActiveText : theme.colors.textMuted,
                 boxShadow: viewMode === "list" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                transition: "all 0.15s ease",
+                transition: "all 0.3s ease",
               }}
             >
               <List style={{ width: 16, height: 16 }} />
@@ -211,7 +215,7 @@ export function ScheduleView() {
 
         {/* Right: Filter */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Filter style={{ width: 14, height: 14, color: "#6b7280" }} />
+          <Filter style={{ width: 14, height: 14, color: theme.colors.textMuted }} />
           {filterButtons.map((btn) => (
             <button
               key={btn.type ?? "all"}
@@ -231,9 +235,9 @@ export function ScheduleView() {
                     ? btn.type
                       ? `${btn.color}20`
                       : "rgba(124, 58, 237, 0.15)"
-                    : "#e8e8ed",
-                color: typeFilter === btn.type ? btn.color : "#6b7280",
-                transition: "all 0.15s ease",
+                    : theme.colors.tabBg,
+                color: typeFilter === btn.type ? btn.color : theme.colors.textMuted,
+                transition: "all 0.3s ease",
               }}
             >
               {btn.icon}
@@ -254,8 +258,8 @@ export function ScheduleView() {
                 border: "none",
                 cursor: "pointer",
                 backgroundColor: "rgba(107, 114, 128, 0.15)",
-                color: "#6b7280",
-                transition: "all 0.15s ease",
+                color: theme.colors.textMuted,
+                transition: "all 0.3s ease",
               }}
             >
               <X style={{ width: 14, height: 14 }} />
@@ -275,7 +279,7 @@ export function ScheduleView() {
             minHeight: 400,
           }}
         >
-          <p style={{ color: "#6b7280" }}>Loading events...</p>
+          <p style={{ color: theme.colors.textMuted, transition: "all 0.3s ease" }}>Loading events...</p>
         </div>
       ) : viewMode === "calendar" ? (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 24, alignItems: "start" }}>
@@ -298,7 +302,7 @@ export function ScheduleView() {
                     flexShrink: 0,
                   }}
                 >
-                  <h3 style={{ fontSize: 16, fontWeight: 600, color: "#1e1e2e", margin: 0 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, color: theme.colors.text, margin: 0, transition: "all 0.3s ease" }}>
                     {selectedDate.toLocaleDateString("en-US", {
                       weekday: "long",
                       month: "long",
@@ -316,9 +320,9 @@ export function ScheduleView() {
                       borderRadius: "50%",
                       border: "none",
                       backgroundColor: "rgba(107, 114, 128, 0.1)",
-                      color: "#6b7280",
+                      color: theme.colors.textMuted,
                       cursor: "pointer",
-                      transition: "all 0.15s ease",
+                      transition: "all 0.3s ease",
                     }}
                   >
                     <X style={{ width: 14, height: 14 }} />
@@ -346,7 +350,7 @@ export function ScheduleView() {
                         textAlign: "center",
                       }}
                     >
-                      <p style={{ color: "#6b7280", margin: "0 0 12px" }}>No events on this day</p>
+                      <p style={{ color: theme.colors.textMuted, margin: "0 0 12px", transition: "all 0.3s ease" }}>No events on this day</p>
                       <button
                         onClick={() => {
                           setEditingEvent(null);
@@ -355,13 +359,13 @@ export function ScheduleView() {
                         style={{
                           padding: "8px 16px",
                           borderRadius: 6,
-                          border: "1px solid #e5e5eb",
-                          backgroundColor: "#fff",
+                          border: `1px solid ${theme.colors.border}`,
+                          backgroundColor: theme.colors.card,
                           color: "#7c3aed",
                           fontSize: 13,
                           fontWeight: 500,
                           cursor: "pointer",
-                          transition: "all 0.15s ease",
+                          transition: "all 0.3s ease",
                         }}
                       >
                         Add Event
@@ -372,7 +376,7 @@ export function ScheduleView() {
                   {/* Always show upcoming events below */}
                   {upcomingEvents.length > 0 && (
                     <>
-                      <h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: 0 }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 600, color: theme.colors.textMuted, margin: 0, transition: "all 0.3s ease" }}>
                         Upcoming
                       </h3>
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -392,7 +396,7 @@ export function ScheduleView() {
               </>
             ) : (
               <>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: "#1e1e2e", margin: 0, flexShrink: 0 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: theme.colors.text, margin: 0, flexShrink: 0, transition: "all 0.3s ease" }}>
                   Upcoming Events
                 </h3>
                 {upcomingEvents.length === 0 ? (
@@ -404,9 +408,9 @@ export function ScheduleView() {
                     }}
                   >
                     <CalendarDays
-                      style={{ width: 40, height: 40, color: "#d1d5db", margin: "0 auto 12px" }}
+                      style={{ width: 40, height: 40, color: theme.colors.textMuted, margin: "0 auto 12px", opacity: 0.5, transition: "all 0.3s ease" }}
                     />
-                    <p style={{ color: "#6b7280", margin: 0 }}>No upcoming events</p>
+                    <p style={{ color: theme.colors.textMuted, margin: 0, transition: "all 0.3s ease" }}>No upcoming events</p>
                   </div>
                 ) : (
                   <div
@@ -447,7 +451,8 @@ export function ScheduleView() {
                     style={{
                       padding: 16,
                       borderBottom:
-                        index < filteredEvents.length - 1 ? "1px solid #e5e5eb" : "none",
+                        index < filteredEvents.length - 1 ? `1px solid ${theme.colors.border}` : "none",
+                      transition: "all 0.3s ease",
                     }}
                   >
                     <EventCard
@@ -467,12 +472,12 @@ export function ScheduleView() {
               }}
             >
               <CalendarDays
-                style={{ width: 48, height: 48, color: "#d1d5db", margin: "0 auto 16px" }}
+                style={{ width: 48, height: 48, color: theme.colors.textMuted, opacity: 0.5, margin: "0 auto 16px", transition: "all 0.3s ease" }}
               />
-              <h3 style={{ fontSize: 18, fontWeight: 600, color: "#1e1e2e", margin: "0 0 8px" }}>
+              <h3 style={{ fontSize: 18, fontWeight: 600, color: theme.colors.text, margin: "0 0 8px", transition: "all 0.3s ease" }}>
                 No Events Yet
               </h3>
-              <p style={{ color: "#6b7280", margin: "0 0 20px" }}>
+              <p style={{ color: theme.colors.textMuted, margin: "0 0 20px", transition: "all 0.3s ease" }}>
                 Create your first event to get started
               </p>
               <button

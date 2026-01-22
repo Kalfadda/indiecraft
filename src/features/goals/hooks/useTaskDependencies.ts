@@ -53,12 +53,12 @@ export function useTaskDependents(assetId: string | undefined) {
   });
 }
 
-// Get all dependencies for a sprint
-export function useSprintDependencies(sprintId: string | undefined) {
+// Get all dependencies for a goal
+export function useGoalDependencies(goalId: string | undefined) {
   return useQuery({
-    queryKey: ["sprint_dependencies", sprintId],
+    queryKey: ["goal_dependencies", goalId],
     queryFn: async (): Promise<DependencyWithTask[]> => {
-      if (!sprintId) return [];
+      if (!goalId) return [];
 
       const { data, error } = await supabase
         .from("task_dependencies")
@@ -67,12 +67,12 @@ export function useSprintDependencies(sprintId: string | undefined) {
           dependency_task:assets!dependency_task_id(id, name, status, category),
           dependent_task:assets!dependent_task_id(id, name, status, category)
         `)
-        .eq("sprint_id", sprintId);
+        .eq("goal_id", goalId);
 
       if (error) throw error;
       return (data || []) as DependencyWithTask[];
     },
-    enabled: !!sprintId,
+    enabled: !!goalId,
   });
 }
 
@@ -82,12 +82,12 @@ export function useCanStartTask(assetId: string | undefined) {
 
   const allDependenciesMet = dependencies?.every(dep => {
     const status = dep.dependency_task?.status;
-    return status === "completed" || status === "implemented";
+    return status === "completed";
   }) ?? true;
 
   const unmetDependencies = dependencies?.filter(dep => {
     const status = dep.dependency_task?.status;
-    return status !== "completed" && status !== "implemented";
+    return status !== "completed";
   }) ?? [];
 
   return {
@@ -104,18 +104,18 @@ export function useTaskDependencyMutations() {
     mutationFn: async ({
       dependentTaskId,
       dependencyTaskId,
-      sprintId,
+      goalId,
     }: {
       dependentTaskId: string;
       dependencyTaskId: string;
-      sprintId?: string;
+      goalId?: string;
     }) => {
       const { data, error } = await supabase
         .from("task_dependencies")
         .insert({
           dependent_task_id: dependentTaskId,
           dependency_task_id: dependencyTaskId,
-          sprint_id: sprintId || null,
+          goal_id: goalId || null,
         })
         .select()
         .single();
@@ -126,9 +126,9 @@ export function useTaskDependencyMutations() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["task_dependencies", variables.dependentTaskId] });
       queryClient.invalidateQueries({ queryKey: ["task_dependents", variables.dependencyTaskId] });
-      if (variables.sprintId) {
-        queryClient.invalidateQueries({ queryKey: ["sprint_dependencies", variables.sprintId] });
-        queryClient.invalidateQueries({ queryKey: ["sprint", variables.sprintId] });
+      if (variables.goalId) {
+        queryClient.invalidateQueries({ queryKey: ["goal_dependencies", variables.goalId] });
+        queryClient.invalidateQueries({ queryKey: ["goal", variables.goalId] });
       }
     },
   });
@@ -152,8 +152,8 @@ export function useTaskDependencyMutations() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["task_dependencies", variables.dependentTaskId] });
       queryClient.invalidateQueries({ queryKey: ["task_dependents", variables.dependencyTaskId] });
-      queryClient.invalidateQueries({ queryKey: ["sprint_dependencies"] });
-      queryClient.invalidateQueries({ queryKey: ["sprint"] });
+      queryClient.invalidateQueries({ queryKey: ["goal_dependencies"] });
+      queryClient.invalidateQueries({ queryKey: ["goal"] });
     },
   });
 
@@ -169,8 +169,8 @@ export function useTaskDependencyMutations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["task_dependencies"] });
       queryClient.invalidateQueries({ queryKey: ["task_dependents"] });
-      queryClient.invalidateQueries({ queryKey: ["sprint_dependencies"] });
-      queryClient.invalidateQueries({ queryKey: ["sprint"] });
+      queryClient.invalidateQueries({ queryKey: ["goal_dependencies"] });
+      queryClient.invalidateQueries({ queryKey: ["goal"] });
     },
   });
 

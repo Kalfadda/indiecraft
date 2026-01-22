@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { Countdown } from "./Countdown";
 import { EVENT_TYPES, type Event, type EventType } from "@/types/database";
 import { useNavigationStore } from "@/stores/navigationStore";
+import { useTheme } from "@/stores/themeStore";
 
 interface EventCardProps {
   event: Event;
@@ -52,6 +53,7 @@ function getEventDateTime(dateString: string, timeString: string | null): Date {
 }
 
 export function EventCard({ event, linkedAssetName, onEdit, onDelete }: EventCardProps) {
+  const theme = useTheme();
   const eventMeta = EVENT_TYPES[event.type];
   const isLabel = event.type === "label";
   const setPendingTaskId = useNavigationStore((state) => state.setPendingTaskId);
@@ -63,12 +65,14 @@ export function EventCard({ event, linkedAssetName, onEdit, onDelete }: EventCar
   };
 
   const cardStyle: React.CSSProperties = {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
-    border: "1px solid #e5e5eb",
+    border: `1px solid ${theme.colors.cardBorder}`,
     padding: isLabel ? "12px 16px" : "16px 20px",
-    transition: "all 0.2s ease",
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+    transition: "all 0.3s ease",
+    boxShadow: theme.isDark
+      ? "0 1px 3px rgba(0, 0, 0, 0.3)"
+      : "0 1px 3px rgba(0, 0, 0, 0.05)",
     overflow: "hidden",
   };
 
@@ -96,18 +100,20 @@ export function EventCard({ event, linkedAssetName, onEdit, onDelete }: EventCar
   const titleStyle: React.CSSProperties = {
     fontSize: isLabel ? 14 : 16,
     fontWeight: 600,
-    color: "#1e1e2e",
+    color: theme.colors.text,
     margin: 0,
     lineHeight: 1.4,
+    transition: "all 0.3s ease",
   };
 
   const descriptionStyle: React.CSSProperties = {
     fontSize: 13,
-    color: "#6b7280",
+    color: theme.colors.textMuted,
     margin: "8px 0 0 0",
     lineHeight: 1.5,
     wordBreak: "break-word",
     overflowWrap: "break-word",
+    transition: "all 0.3s ease",
   };
 
   const metaRowStyle: React.CSSProperties = {
@@ -120,8 +126,9 @@ export function EventCard({ event, linkedAssetName, onEdit, onDelete }: EventCar
 
   const dateStyle: React.CSSProperties = {
     fontSize: 13,
-    color: "#4b5563",
+    color: theme.colors.textSecondary,
     fontWeight: 500,
+    transition: "all 0.3s ease",
   };
 
   const visibilityBadgeStyle: React.CSSProperties = {
@@ -130,10 +137,11 @@ export function EventCard({ event, linkedAssetName, onEdit, onDelete }: EventCar
     gap: 4,
     padding: "3px 8px",
     borderRadius: 4,
-    backgroundColor: event.visibility === "external" ? "rgba(16, 185, 129, 0.1)" : "rgba(107, 114, 128, 0.1)",
-    color: event.visibility === "external" ? "#10b981" : "#6b7280",
+    backgroundColor: event.visibility === "external" ? theme.colors.successBg : theme.colors.pillBg,
+    color: event.visibility === "external" ? theme.colors.success : theme.colors.textMuted,
     fontSize: 11,
     fontWeight: 500,
+    transition: "all 0.3s ease",
   };
 
   const assetLinkStyle: React.CSSProperties = {
@@ -142,10 +150,11 @@ export function EventCard({ event, linkedAssetName, onEdit, onDelete }: EventCar
     gap: 4,
     padding: "3px 8px",
     borderRadius: 4,
-    backgroundColor: "rgba(59, 130, 246, 0.1)",
-    color: "#3b82f6",
+    backgroundColor: theme.colors.infoBg,
+    color: theme.colors.info,
     fontSize: 11,
     fontWeight: 500,
+    transition: "all 0.3s ease",
   };
 
   const actionsStyle: React.CSSProperties = {
@@ -163,9 +172,9 @@ export function EventCard({ event, linkedAssetName, onEdit, onDelete }: EventCar
     borderRadius: 6,
     border: "none",
     backgroundColor: "transparent",
-    color: "#9ca3af",
+    color: theme.colors.textMuted,
     cursor: "pointer",
-    transition: "all 0.15s ease",
+    transition: "all 0.3s ease",
   };
 
   return (
@@ -176,12 +185,16 @@ export function EventCard({ event, linkedAssetName, onEdit, onDelete }: EventCar
       transition={{ duration: 0.2 }}
       style={cardStyle}
       onMouseOver={(e) => {
-        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.08)";
-        e.currentTarget.style.borderColor = "#d1d5db";
+        e.currentTarget.style.boxShadow = theme.isDark
+          ? "0 4px 12px rgba(0, 0, 0, 0.4)"
+          : "0 4px 12px rgba(0, 0, 0, 0.08)";
+        e.currentTarget.style.borderColor = theme.colors.border;
       }}
       onMouseOut={(e) => {
-        e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.05)";
-        e.currentTarget.style.borderColor = "#e5e5eb";
+        e.currentTarget.style.boxShadow = theme.isDark
+          ? "0 1px 3px rgba(0, 0, 0, 0.3)"
+          : "0 1px 3px rgba(0, 0, 0, 0.05)";
+        e.currentTarget.style.borderColor = theme.colors.cardBorder;
       }}
     >
       <div style={headerStyle}>
@@ -210,12 +223,12 @@ export function EventCard({ event, linkedAssetName, onEdit, onDelete }: EventCar
             onClick={() => onEdit(event)}
             style={iconButtonStyle}
             onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(124, 58, 237, 0.1)";
-              e.currentTarget.style.color = "#7c3aed";
+              e.currentTarget.style.backgroundColor = theme.colors.primaryLight;
+              e.currentTarget.style.color = theme.colors.primary;
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.backgroundColor = "transparent";
-              e.currentTarget.style.color = "#9ca3af";
+              e.currentTarget.style.color = theme.colors.textMuted;
             }}
             title="Edit event"
           >
@@ -225,12 +238,12 @@ export function EventCard({ event, linkedAssetName, onEdit, onDelete }: EventCar
             onClick={() => onDelete(event.id)}
             style={iconButtonStyle}
             onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.1)";
-              e.currentTarget.style.color = "#ef4444";
+              e.currentTarget.style.backgroundColor = theme.colors.errorBg;
+              e.currentTarget.style.color = theme.colors.error;
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.backgroundColor = "transparent";
-              e.currentTarget.style.color = "#9ca3af";
+              e.currentTarget.style.color = theme.colors.textMuted;
             }}
             title="Delete event"
           >
@@ -259,13 +272,15 @@ export function EventCard({ event, linkedAssetName, onEdit, onDelete }: EventCar
               ...assetLinkStyle,
               border: "none",
               cursor: "pointer",
-              transition: "all 0.15s ease",
+              transition: "all 0.3s ease",
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 0.2)";
+              e.currentTarget.style.backgroundColor = theme.isDark
+                ? "rgba(96, 165, 250, 0.25)"
+                : "rgba(59, 130, 246, 0.2)";
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 0.1)";
+              e.currentTarget.style.backgroundColor = theme.colors.infoBg;
             }}
           >
             <Link style={{ width: 12, height: 12 }} />

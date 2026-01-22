@@ -13,6 +13,7 @@ interface CreateAssetData {
   category?: AssetCategory | null;
   priority?: AssetPriority | null;
   eta_date?: string | null;
+  goal_id?: string | null;
 }
 
 export function useAssetMutations() {
@@ -38,6 +39,7 @@ export function useAssetMutations() {
           category: data.category || null,
           priority: data.priority || null,
           eta_date: data.eta_date || null,
+          goal_id: data.goal_id || null,
           status: "pending",
           created_by: user.id,
         })
@@ -75,6 +77,9 @@ export function useAssetMutations() {
       console.log("Asset created successfully");
       queryClient.invalidateQueries({ queryKey: ["assets"] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
+      queryClient.invalidateQueries({ queryKey: ["goal"] });
+      queryClient.invalidateQueries({ queryKey: ["inbox_count"] });
       addNotification(
         createNotificationConfig(
           "task_created",
@@ -187,6 +192,8 @@ export function useAssetMutations() {
     },
     onSuccess: (asset) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
+      queryClient.invalidateQueries({ queryKey: ["goal"] });
       addNotification(
         createNotificationConfig(
           "task_in_progress",
@@ -232,6 +239,8 @@ export function useAssetMutations() {
     onSuccess: (asset) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
+      queryClient.invalidateQueries({ queryKey: ["goal"] });
       addNotification(
         createNotificationConfig(
           "task_completed",
@@ -243,51 +252,7 @@ export function useAssetMutations() {
     },
   });
 
-  // Move task to implemented status (from completed)
-  const markAsImplemented = useMutation({
-    mutationFn: async (id: string) => {
-      if (!user) throw new Error("Not authenticated");
-
-      const { data: asset, error } = await supabase
-        .from("assets")
-        .update({
-          status: "implemented",
-          implemented_by: user.id,
-          implemented_at: new Date().toISOString(),
-        })
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Remove linked scheduled event when task is implemented (in case it wasn't removed at completed)
-      const { error: eventError } = await supabase
-        .from("events")
-        .delete()
-        .eq("linked_asset_id", id);
-
-      if (eventError) {
-        console.warn("Failed to delete linked event:", eventError);
-      }
-
-      return asset;
-    },
-    onSuccess: (asset) => {
-      queryClient.invalidateQueries({ queryKey: ["assets"] });
-      queryClient.invalidateQueries({ queryKey: ["events"] });
-      addNotification(
-        createNotificationConfig(
-          "task_implemented",
-          asset.name,
-          profile?.display_name || profile?.email || "You",
-          true
-        )
-      );
-    },
-  });
-
-  // Move task back to pending (from in_progress, completed or implemented)
+  // Move task back to pending (from in_progress or completed)
   const moveToPending = useMutation({
     mutationFn: async (id: string) => {
       const { data: asset, error } = await supabase
@@ -298,8 +263,6 @@ export function useAssetMutations() {
           in_progress_at: null,
           completed_by: null,
           completed_at: null,
-          implemented_by: null,
-          implemented_at: null,
         })
         .eq("id", id)
         .select()
@@ -310,6 +273,8 @@ export function useAssetMutations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
+      queryClient.invalidateQueries({ queryKey: ["goal"] });
     },
   });
 
@@ -324,8 +289,6 @@ export function useAssetMutations() {
           status: "in_progress",
           completed_by: null,
           completed_at: null,
-          implemented_by: null,
-          implemented_at: null,
           // Keep in_progress_by and in_progress_at if they exist
         })
         .eq("id", id)
@@ -337,31 +300,8 @@ export function useAssetMutations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
-    },
-  });
-
-  // Move task back to completed (from implemented)
-  const moveToCompleted = useMutation({
-    mutationFn: async (id: string) => {
-      if (!user) throw new Error("Not authenticated");
-
-      const { data: asset, error } = await supabase
-        .from("assets")
-        .update({
-          status: "completed",
-          implemented_by: null,
-          implemented_at: null,
-          // Keep completed_by and completed_at if they exist
-        })
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return asset;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
+      queryClient.invalidateQueries({ queryKey: ["goal"] });
     },
   });
 
@@ -407,6 +347,16 @@ export function useAssetMutations() {
         console.warn("Failed to unlink feature requests:", featureRequestError);
       }
 
+      // Remove task from goal_tasks junction table
+      const { error: goalTaskError } = await supabase
+        .from("goal_tasks")
+        .delete()
+        .eq("asset_id", id);
+
+      if (goalTaskError) {
+        console.warn("Failed to remove from goal_tasks:", goalTaskError);
+      }
+
       // Then delete the asset
       const { error } = await supabase.from("assets").delete().eq("id", id);
 
@@ -417,6 +367,9 @@ export function useAssetMutations() {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["model_requests"] });
       queryClient.invalidateQueries({ queryKey: ["feature_requests"] });
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
+      queryClient.invalidateQueries({ queryKey: ["goal"] });
+      queryClient.invalidateQueries({ queryKey: ["inbox_count"] });
     },
   });
 
@@ -480,15 +433,71 @@ export function useAssetMutations() {
     },
   });
 
+  // Mark a task as blocked
+  const markAsBlocked = useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: asset, error } = await supabase
+        .from("assets")
+        .update({
+          status: "blocked",
+          blocked_by: user.id,
+          blocked_at: new Date().toISOString(),
+          blocked_reason: reason,
+        })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return asset;
+    },
+    onSuccess: (asset) => {
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      addNotification(
+        createNotificationConfig(
+          "task_blocked",
+          asset.name,
+          profile?.display_name || profile?.email || "You",
+          true
+        )
+      );
+    },
+  });
+
+  // Unblock a task (move back to pending)
+  const unblockAsset = useMutation({
+    mutationFn: async (id: string) => {
+      const { data: asset, error } = await supabase
+        .from("assets")
+        .update({
+          status: "pending",
+          blocked_by: null,
+          blocked_at: null,
+          blocked_reason: null,
+        })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return asset;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+    },
+  });
+
   return {
     createAsset,
     updateAsset,
     markAsInProgress,
     markAsCompleted,
-    markAsImplemented,
+    markAsBlocked,
     moveToPending,
     moveToInProgress,
-    moveToCompleted,
+    unblockAsset,
     deleteAsset,
     claimAsset,
     unclaimAsset,

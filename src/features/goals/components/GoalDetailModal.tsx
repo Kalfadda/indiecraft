@@ -1,30 +1,34 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Zap, Plus, Trash2, CheckCircle2, AlertCircle, Edit2, Link2, MessageCircle, Send, PlusCircle } from "lucide-react";
-import type { SprintWithDetails } from "../hooks/useSprints";
-import { useSprintMutations } from "../hooks/useSprintMutations";
-import { useSprintDependencies, useTaskDependencyMutations } from "../hooks/useTaskDependencies";
-import { useSprintComments } from "../hooks/useSprintComments";
-import { useSprintCommentMutations } from "../hooks/useSprintCommentMutations";
+import { X, Target, Plus, Trash2, CheckCircle2, AlertCircle, Edit2, Link2, MessageCircle, Send, PlusCircle, Calendar } from "lucide-react";
+import type { GoalWithDetails } from "../hooks/useGoals";
+import { useGoalMutations } from "../hooks/useGoalMutations";
+import { useGoalDependencies, useTaskDependencyMutations } from "../hooks/useTaskDependencies";
+import { useGoalComments } from "../hooks/useGoalComments";
+import { useGoalCommentMutations } from "../hooks/useGoalCommentMutations";
 import { useAssets } from "@/features/assets/hooks/useAssets";
 import { useAssetMutations } from "@/features/assets/hooks/useAssetMutations";
 import { useAuthStore } from "@/stores/authStore";
 import { useNavigationStore } from "@/stores/navigationStore";
-import { SPRINT_STATUSES, ASSET_CATEGORIES, type Asset, type AssetCategory } from "@/types/database";
+import { useTheme } from "@/stores/themeStore";
+import { GOAL_STATUSES, ASSET_CATEGORIES, ASSET_PRIORITIES, type Asset, type AssetCategory, type AssetPriority } from "@/types/database";
 
-interface SprintDetailModalProps {
-  sprint: SprintWithDetails | null;
+interface GoalDetailModalProps {
+  goal: GoalWithDetails | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModalProps) {
+export function GoalDetailModal({ goal, isOpen, onClose }: GoalDetailModalProps) {
+  const theme = useTheme();
   const [showAddTask, setShowAddTask] = useState(false);
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showAddDependency, setShowAddDependency] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editPriority, setEditPriority] = useState<string>("");
+  const [editTargetDate, setEditTargetDate] = useState("");
   const [newComment, setNewComment] = useState("");
 
   // New task creation state
@@ -34,63 +38,68 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
 
   const user = useAuthStore((state) => state.user);
   const setPendingTaskId = useNavigationStore((state) => state.setPendingTaskId);
-  const { updateSprint, deleteSprint, removeTaskFromSprint, addTaskToSprint } = useSprintMutations();
+  const { updateGoal, deleteGoal, removeTaskFromGoal, addTaskToGoal } = useGoalMutations();
   const { createAsset } = useAssetMutations();
-  const { data: dependencies = [] } = useSprintDependencies(sprint?.id);
+  const { data: dependencies = [] } = useGoalDependencies(goal?.id);
   const { addDependency, removeDependencyById } = useTaskDependencyMutations();
 
   // Comments
-  const { data: comments = [], isLoading: commentsLoading } = useSprintComments(sprint?.id);
-  const { createComment, deleteComment } = useSprintCommentMutations();
+  const { data: comments = [], isLoading: commentsLoading } = useGoalComments(goal?.id);
+  const { createComment, deleteComment } = useGoalCommentMutations();
 
-  // Get all tasks for adding to sprint
+  // Get all tasks for adding to goal
   const { data: allTasks = [] } = useAssets();
 
-  if (!sprint) return null;
+  if (!goal) return null;
 
-  const status = SPRINT_STATUSES[sprint.status];
-  // Progress is based on implemented tasks only
-  const progress = sprint.task_count > 0
-    ? Math.round((sprint.implemented_task_count / sprint.task_count) * 100)
+  const status = GOAL_STATUSES[goal.status];
+  const priority = goal.priority ? ASSET_PRIORITIES[goal.priority as keyof typeof ASSET_PRIORITIES] : null;
+  // Progress is based on completed tasks only
+  const progress = goal.task_count > 0
+    ? Math.round((goal.completed_task_count / goal.task_count) * 100)
     : 0;
 
-  const tasksInSprint = new Set(sprint.tasks.map(t => t.id));
-  const availableTasks = allTasks.filter(t => !tasksInSprint.has(t.id));
+  const tasksInGoal = new Set(goal.tasks.map(t => t.id));
+  const availableTasks = allTasks.filter(t => !tasksInGoal.has(t.id));
 
   const handleSave = () => {
     if (!editName.trim()) return;
-    updateSprint.mutate({
-      id: sprint.id,
+    updateGoal.mutate({
+      id: goal.id,
       name: editName.trim(),
       description: editDescription.trim() || undefined,
+      priority: editPriority || undefined,
+      target_date: editTargetDate || undefined,
     });
     setIsEditing(false);
   };
 
   const handleStartEdit = () => {
-    setEditName(sprint.name);
-    setEditDescription(sprint.description || "");
+    setEditName(goal.name);
+    setEditDescription(goal.description || "");
+    setEditPriority(goal.priority || "");
+    setEditTargetDate(goal.target_date || "");
     setIsEditing(true);
   };
 
   const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this sprint? This won't delete the tasks, only the sprint grouping.")) {
-      deleteSprint.mutate(sprint.id);
+    if (confirm("Are you sure you want to delete this goal? Tasks will be moved to your Inbox.")) {
+      deleteGoal.mutate(goal.id);
       onClose();
     }
   };
 
   const handleAddTask = (assetId: string) => {
-    addTaskToSprint.mutate({
-      sprintId: sprint.id,
+    addTaskToGoal.mutate({
+      goalId: goal.id,
       assetId,
     });
     setShowAddTask(false);
   };
 
   const handleRemoveTask = (assetId: string) => {
-    removeTaskFromSprint.mutate({
-      sprintId: sprint.id,
+    removeTaskFromGoal.mutate({
+      goalId: goal.id,
       assetId,
     });
   };
@@ -99,25 +108,26 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
     addDependency.mutate({
       dependentTaskId,
       dependencyTaskId,
-      sprintId: sprint.id,
+      goalId: goal.id,
     });
     setShowAddDependency(null);
   };
 
   const handleCreateTask = async () => {
-    if (!newTaskName.trim() || !sprint) return;
+    if (!newTaskName.trim() || !goal) return;
 
     try {
       const newAsset = await createAsset.mutateAsync({
         name: newTaskName.trim(),
         blurb: newTaskBlurb.trim(),
         category: newTaskCategory || null,
+        goal_id: goal.id,
       });
 
-      // Add the newly created task to this sprint
+      // Add the newly created task to this goal
       if (newAsset?.id) {
-        addTaskToSprint.mutate({
-          sprintId: sprint.id,
+        addTaskToGoal.mutate({
+          goalId: goal.id,
           assetId: newAsset.id,
         });
       }
@@ -134,9 +144,9 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
   };
 
   const handleAddComment = () => {
-    if (!newComment.trim() || !sprint) return;
+    if (!newComment.trim() || !goal) return;
     createComment.mutate({
-      sprint_id: sprint.id,
+      goal_id: goal.id,
       content: newComment.trim(),
     });
     setNewComment("");
@@ -148,18 +158,13 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
   };
 
   const handleDeleteComment = (commentId: string) => {
-    if (!sprint) return;
-    deleteComment.mutate({ commentId, sprintId: sprint.id });
+    if (!goal) return;
+    deleteComment.mutate({ commentId, goalId: goal.id });
   };
 
   // Get dependencies for a specific task
   const getTaskDependencies = (taskId: string) => {
     return dependencies.filter(d => d.dependent_task_id === taskId);
-  };
-
-  // Get what this task blocks
-  const getTaskDependents = (taskId: string) => {
-    return dependencies.filter(d => d.dependency_task_id === taskId);
   };
 
   return (
@@ -203,23 +208,25 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                 width: '100%',
                 maxWidth: 700,
                 maxHeight: 'calc(100vh - 48px)',
-                backgroundColor: '#ffffff',
+                backgroundColor: theme.colors.card,
                 borderRadius: 16,
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
                 pointerEvents: 'auto',
+                transition: 'all 0.3s ease',
               }}
             >
               {/* Header */}
               <div style={{
                 padding: '20px 24px',
-                borderBottom: '1px solid #e5e5eb',
+                borderBottom: `1px solid ${theme.colors.border}`,
                 display: 'flex',
                 alignItems: 'flex-start',
                 justifyContent: 'space-between',
                 gap: 16,
+                transition: 'all 0.3s ease',
               }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -232,8 +239,20 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}>
-                      <Zap style={{ width: 18, height: 18, color: status.color }} />
+                      <Target style={{ width: 18, height: 18, color: status.color }} />
                     </div>
+                    {priority && (
+                      <span style={{
+                        padding: '4px 10px',
+                        borderRadius: 999,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        backgroundColor: `${priority.color}15`,
+                        color: priority.color,
+                      }}>
+                        {priority.label}
+                      </span>
+                    )}
                     <span style={{
                       padding: '4px 10px',
                       borderRadius: 999,
@@ -244,16 +263,16 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                     }}>
                       {status.label}
                     </span>
-                    {progress === 100 && sprint.status === "active" && (
+                    {progress === 100 && goal.status === "active" && (
                       <span style={{
                         padding: '4px 10px',
                         borderRadius: 999,
                         fontSize: 11,
                         fontWeight: 600,
-                        backgroundColor: 'rgba(22, 163, 74, 0.1)',
-                        color: '#16a34a',
+                        backgroundColor: `${theme.colors.success}15`,
+                        color: theme.colors.success,
                       }}>
-                        Auto-completing...
+                        All tasks complete!
                       </span>
                     )}
                   </div>
@@ -265,32 +284,47 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                       style={{
                         fontSize: 20,
                         fontWeight: 600,
-                        color: '#1e1e2e',
+                        color: theme.colors.text,
                         width: '100%',
                         padding: '8px 12px',
                         borderRadius: 8,
-                        border: '1px solid #e5e5eb',
-                        backgroundColor: '#f9fafb',
+                        border: `1px solid ${theme.colors.border}`,
+                        backgroundColor: theme.colors.inputBg,
                         outline: 'none',
+                        transition: 'all 0.3s ease',
                       }}
-                      onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
-                      onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
+                      onFocus={(e) => e.currentTarget.style.borderColor = theme.colors.primary}
+                      onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.border}
                       autoFocus
                     />
                   ) : (
                     <h2 style={{
                       fontSize: 22,
                       fontWeight: 600,
-                      color: '#1e1e2e',
+                      color: theme.colors.text,
                       margin: 0,
+                      transition: 'all 0.3s ease',
                     }}>
-                      {sprint.name}
+                      {goal.name}
                     </h2>
+                  )}
+                  {goal.target_date && !isEditing && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      marginTop: 8,
+                      color: theme.colors.textMuted,
+                      fontSize: 13,
+                    }}>
+                      <Calendar style={{ width: 14, height: 14 }} />
+                      Target: {new Date(goal.target_date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                    </div>
                   )}
                 </div>
 
                 <div style={{ display: 'flex', gap: 4 }}>
-                  {!isEditing && sprint.status === "active" && (
+                  {!isEditing && goal.status === "active" && (
                     <button
                       onClick={handleStartEdit}
                       style={{
@@ -302,10 +336,10 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                         borderRadius: 8,
                         border: 'none',
                         backgroundColor: 'transparent',
-                        color: '#9ca3af',
+                        color: theme.colors.textMuted,
                         cursor: 'pointer',
                       }}
-                      title="Edit sprint"
+                      title="Edit goal"
                     >
                       <Edit2 style={{ width: 18, height: 18 }} />
                     </button>
@@ -321,7 +355,7 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                       borderRadius: 8,
                       border: 'none',
                       backgroundColor: 'transparent',
-                      color: '#9ca3af',
+                      color: theme.colors.textMuted,
                       cursor: 'pointer',
                     }}
                   >
@@ -332,37 +366,90 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
 
               {/* Content */}
               <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
-                {/* Description */}
+                {/* Description & Edit Fields */}
                 {isEditing ? (
-                  <textarea
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    placeholder="Add a description..."
-                    rows={2}
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px',
-                      fontSize: 14,
-                      borderRadius: 10,
-                      border: '1px solid #e5e5eb',
-                      backgroundColor: '#f9fafb',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                      resize: 'none',
-                      fontFamily: 'inherit',
-                      marginBottom: 20,
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
-                  />
-                ) : sprint.description ? (
+                  <div style={{ marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <textarea
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      placeholder="Add a description..."
+                      rows={2}
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        fontSize: 14,
+                        borderRadius: 10,
+                        border: `1px solid ${theme.colors.border}`,
+                        backgroundColor: theme.colors.inputBg,
+                        color: theme.colors.text,
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                        resize: 'none',
+                        fontFamily: 'inherit',
+                        transition: 'all 0.3s ease',
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = theme.colors.primary}
+                      onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.border}
+                    />
+                    <div style={{ display: 'flex', gap: 16 }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: 12, fontWeight: 500, color: theme.colors.textMuted, marginBottom: 4, display: 'block' }}>
+                          Priority
+                        </label>
+                        <select
+                          value={editPriority}
+                          onChange={(e) => setEditPriority(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            fontSize: 14,
+                            borderRadius: 8,
+                            border: `1px solid ${theme.colors.border}`,
+                            backgroundColor: theme.colors.inputBg,
+                            color: theme.colors.text,
+                            outline: 'none',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <option value="">No priority</option>
+                          {Object.entries(ASSET_PRIORITIES).map(([key, val]) => (
+                            <option key={key} value={key}>{val.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: 12, fontWeight: 500, color: theme.colors.textMuted, marginBottom: 4, display: 'block' }}>
+                          Target Date
+                        </label>
+                        <input
+                          type="date"
+                          value={editTargetDate}
+                          onChange={(e) => setEditTargetDate(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            fontSize: 14,
+                            borderRadius: 8,
+                            border: `1px solid ${theme.colors.border}`,
+                            backgroundColor: theme.colors.inputBg,
+                            color: theme.colors.text,
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                            cursor: 'pointer',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : goal.description ? (
                   <p style={{
                     fontSize: 14,
-                    color: '#6b7280',
+                    color: theme.colors.textMuted,
                     lineHeight: 1.6,
                     margin: '0 0 20px 0',
+                    transition: 'all 0.3s ease',
                   }}>
-                    {sprint.description}
+                    {goal.description}
                   </p>
                 ) : null}
 
@@ -374,32 +461,30 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                     alignItems: 'center',
                     marginBottom: 8,
                   }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#4b5563' }}>
-                      Progress (Implemented Tasks)
+                    <span style={{ fontSize: 13, fontWeight: 600, color: theme.colors.textMuted, transition: 'all 0.3s ease' }}>
+                      Progress (Completed Tasks)
                     </span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#1e1e2e' }}>
-                      {sprint.implemented_task_count}/{sprint.task_count} tasks ({progress}%)
+                    <span style={{ fontSize: 13, fontWeight: 600, color: theme.colors.text, transition: 'all 0.3s ease' }}>
+                      {goal.completed_task_count}/{goal.task_count} tasks ({progress}%)
                     </span>
                   </div>
                   <div style={{
                     height: 8,
-                    backgroundColor: '#f3f4f6',
+                    backgroundColor: theme.colors.backgroundSecondary,
                     borderRadius: 999,
                     overflow: 'hidden',
+                    transition: 'all 0.3s ease',
                   }}>
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${progress}%` }}
                       style={{
                         height: '100%',
-                        backgroundColor: progress === 100 ? '#16a34a' : '#7c3aed',
+                        backgroundColor: progress === 100 ? theme.colors.success : theme.colors.primary,
                         borderRadius: 999,
                       }}
                     />
                   </div>
-                  <p style={{ fontSize: 12, color: '#9ca3af', margin: '8px 0 0 0' }}>
-                    Sprint auto-completes when all tasks reach "Implemented" status
-                  </p>
                 </div>
 
                 {/* Tasks */}
@@ -413,14 +498,15 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                     <h3 style={{
                       fontSize: 13,
                       fontWeight: 600,
-                      color: '#6b7280',
+                      color: theme.colors.textMuted,
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
                       margin: 0,
+                      transition: 'all 0.3s ease',
                     }}>
-                      Tasks in Sprint
+                      Tasks in Goal
                     </h3>
-                    {sprint.status === "active" && (
+                    {goal.status === "active" && (
                       <button
                         onClick={() => setShowAddTask(true)}
                         style={{
@@ -430,8 +516,8 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                           padding: '6px 12px',
                           fontSize: 12,
                           fontWeight: 600,
-                          color: '#7c3aed',
-                          backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                          color: theme.colors.primary,
+                          backgroundColor: `${theme.colors.primary}15`,
                           border: 'none',
                           borderRadius: 8,
                           cursor: 'pointer',
@@ -443,24 +529,23 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                     )}
                   </div>
 
-                  {sprint.tasks.length === 0 ? (
+                  {goal.tasks.length === 0 ? (
                     <div style={{
                       padding: 32,
                       textAlign: 'center',
-                      color: '#9ca3af',
-                      backgroundColor: '#f9fafb',
+                      color: theme.colors.textMuted,
+                      backgroundColor: theme.colors.inputBg,
                       borderRadius: 10,
-                      border: '1px dashed #e5e5eb',
+                      border: `1px dashed ${theme.colors.border}`,
+                      transition: 'all 0.3s ease',
                     }}>
-                      No tasks yet. Add tasks to build your sprint.
+                      No tasks yet. Add tasks to build your goal.
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {sprint.tasks.map((task, index) => {
+                      {goal.tasks.map((task, index) => {
                         const taskDeps = getTaskDependencies(task.id);
-                        const taskDependents = getTaskDependents(task.id);
-                        const isImplemented = task.status === "implemented";
-                        const isCompleted = task.status === "completed" || isImplemented;
+                        const isCompleted = task.status === "completed";
                         const category = task.category ? ASSET_CATEGORIES[task.category] : null;
 
                         return (
@@ -471,9 +556,10 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                                 alignItems: 'center',
                                 gap: 12,
                                 padding: 14,
-                                backgroundColor: isImplemented ? 'rgba(22, 163, 74, 0.05)' : isCompleted ? 'rgba(59, 130, 246, 0.05)' : '#f9fafb',
+                                backgroundColor: isCompleted ? `${theme.colors.success}08` : theme.colors.inputBg,
                                 borderRadius: 10,
-                                border: `1px solid ${isImplemented ? 'rgba(22, 163, 74, 0.2)' : isCompleted ? 'rgba(59, 130, 246, 0.2)' : '#e5e5eb'}`,
+                                border: `1px solid ${isCompleted ? `${theme.colors.success}30` : theme.colors.border}`,
+                                transition: 'all 0.3s ease',
                               }}
                             >
                               {/* Step number */}
@@ -481,8 +567,8 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                                 width: 28,
                                 height: 28,
                                 borderRadius: '50%',
-                                backgroundColor: isImplemented ? '#16a34a' : isCompleted ? '#3b82f6' : '#e5e5eb',
-                                color: isImplemented || isCompleted ? '#fff' : '#6b7280',
+                                backgroundColor: isCompleted ? theme.colors.success : theme.colors.border,
+                                color: isCompleted ? '#fff' : theme.colors.textMuted,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -490,7 +576,7 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                                 fontWeight: 600,
                                 flexShrink: 0,
                               }}>
-                                {isImplemented ? <CheckCircle2 style={{ width: 16, height: 16 }} /> : index + 1}
+                                {isCompleted ? <CheckCircle2 style={{ width: 16, height: 16 }} /> : index + 1}
                               </div>
 
                               {/* Task info */}
@@ -501,15 +587,16 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                                     style={{
                                       fontSize: 14,
                                       fontWeight: 500,
-                                      color: '#1e1e2e',
+                                      color: theme.colors.text,
                                       background: 'none',
                                       border: 'none',
                                       padding: 0,
                                       cursor: 'pointer',
                                       textDecoration: 'none',
+                                      transition: 'all 0.15s ease',
                                     }}
-                                    onMouseOver={(e) => e.currentTarget.style.color = '#7c3aed'}
-                                    onMouseOut={(e) => e.currentTarget.style.color = '#1e1e2e'}
+                                    onMouseOver={(e) => e.currentTarget.style.color = theme.colors.primary}
+                                    onMouseOut={(e) => e.currentTarget.style.color = theme.colors.text}
                                   >
                                     {task.name}
                                   </button>
@@ -530,8 +617,8 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                                     borderRadius: 999,
                                     fontSize: 10,
                                     fontWeight: 500,
-                                    backgroundColor: isImplemented ? 'rgba(22, 163, 74, 0.1)' : isCompleted ? 'rgba(59, 130, 246, 0.1)' : '#f3f4f6',
-                                    color: isImplemented ? '#16a34a' : isCompleted ? '#3b82f6' : '#6b7280',
+                                    backgroundColor: isCompleted ? `${theme.colors.success}15` : theme.colors.backgroundSecondary,
+                                    color: isCompleted ? theme.colors.success : theme.colors.textMuted,
                                   }}>
                                     {task.status}
                                   </span>
@@ -539,7 +626,7 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                                 {taskDeps.length > 0 && (
                                   <div style={{
                                     fontSize: 11,
-                                    color: '#9ca3af',
+                                    color: theme.colors.textMuted,
                                     marginTop: 4,
                                     display: 'flex',
                                     alignItems: 'center',
@@ -552,7 +639,7 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                               </div>
 
                               {/* Actions */}
-                              {sprint.status === "active" && (
+                              {goal.status === "active" && (
                                 <div style={{ display: 'flex', gap: 4 }}>
                                   <button
                                     onClick={() => setShowAddDependency(task.id)}
@@ -565,7 +652,7 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                                       borderRadius: 6,
                                       border: 'none',
                                       backgroundColor: 'transparent',
-                                      color: '#9ca3af',
+                                      color: theme.colors.textMuted,
                                       cursor: 'pointer',
                                     }}
                                     title="Add dependency"
@@ -583,10 +670,10 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                                       borderRadius: 6,
                                       border: 'none',
                                       backgroundColor: 'transparent',
-                                      color: '#9ca3af',
+                                      color: theme.colors.textMuted,
                                       cursor: 'pointer',
                                     }}
-                                    title="Remove from sprint"
+                                    title="Remove from goal"
                                   >
                                     <Trash2 style={{ width: 14, height: 14 }} />
                                   </button>
@@ -599,15 +686,15 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                               <div style={{
                                 marginTop: 8,
                                 padding: 12,
-                                backgroundColor: '#fff',
-                                border: '1px solid #e5e5eb',
+                                backgroundColor: theme.colors.card,
+                                border: `1px solid ${theme.colors.border}`,
                                 borderRadius: 8,
                               }}>
-                                <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 8px 0' }}>
+                                <p style={{ fontSize: 12, color: theme.colors.textMuted, margin: '0 0 8px 0' }}>
                                   Select a task this depends on:
                                 </p>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                  {sprint.tasks
+                                  {goal.tasks
                                     .filter(t => t.id !== task.id && !taskDeps.some(d => d.dependency_task_id === t.id))
                                     .map(t => (
                                       <button
@@ -617,10 +704,11 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                                           padding: '8px 12px',
                                           fontSize: 13,
                                           textAlign: 'left',
-                                          backgroundColor: '#f9fafb',
-                                          border: '1px solid #e5e5eb',
+                                          backgroundColor: theme.colors.inputBg,
+                                          border: `1px solid ${theme.colors.border}`,
                                           borderRadius: 6,
                                           cursor: 'pointer',
+                                          color: theme.colors.text,
                                         }}
                                       >
                                         {t.name}
@@ -631,7 +719,7 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                                     style={{
                                       padding: '8px 12px',
                                       fontSize: 13,
-                                      color: '#6b7280',
+                                      color: theme.colors.textMuted,
                                       backgroundColor: 'transparent',
                                       border: 'none',
                                       cursor: 'pointer',
@@ -644,7 +732,7 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                             )}
 
                             {/* Connector line */}
-                            {index < sprint.tasks.length - 1 && (
+                            {index < goal.tasks.length - 1 && (
                               <div style={{
                                 display: 'flex',
                                 justifyContent: 'center',
@@ -653,7 +741,7 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                                 <div style={{
                                   width: 2,
                                   height: 16,
-                                  backgroundColor: '#e5e5eb',
+                                  backgroundColor: theme.colors.border,
                                 }} />
                               </div>
                             )}
@@ -668,8 +756,8 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                     <div style={{
                       marginTop: 12,
                       padding: 16,
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e5eb',
+                      backgroundColor: theme.colors.card,
+                      border: `1px solid ${theme.colors.border}`,
                       borderRadius: 10,
                     }}>
                       {/* Create new task button */}
@@ -683,9 +771,9 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                           padding: '12px 14px',
                           fontSize: 13,
                           fontWeight: 600,
-                          color: '#7c3aed',
-                          backgroundColor: 'rgba(124, 58, 237, 0.08)',
-                          border: '1px dashed #7c3aed',
+                          color: theme.colors.primary,
+                          backgroundColor: `${theme.colors.primary}08`,
+                          border: `1px dashed ${theme.colors.primary}`,
                           borderRadius: 8,
                           cursor: 'pointer',
                           marginBottom: 12,
@@ -695,12 +783,12 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                         Create New Task
                       </button>
 
-                      <p style={{ fontSize: 13, fontWeight: 500, color: '#4b5563', margin: '0 0 12px 0' }}>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: theme.colors.textMuted, margin: '0 0 12px 0' }}>
                         Or select an existing task:
                       </p>
                       {availableTasks.length === 0 ? (
-                        <p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>
-                          All existing tasks are already in this sprint.
+                        <p style={{ fontSize: 13, color: theme.colors.textMuted, margin: 0 }}>
+                          All existing tasks are already in this goal.
                         </p>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 200, overflow: 'auto' }}>
@@ -717,10 +805,11 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                                   padding: '10px 12px',
                                   fontSize: 13,
                                   textAlign: 'left',
-                                  backgroundColor: '#f9fafb',
-                                  border: '1px solid #e5e5eb',
+                                  backgroundColor: theme.colors.inputBg,
+                                  border: `1px solid ${theme.colors.border}`,
                                   borderRadius: 8,
                                   cursor: 'pointer',
+                                  color: theme.colors.text,
                                 }}
                               >
                                 <span>{task.name}</span>
@@ -746,9 +835,9 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                           marginTop: 12,
                           padding: '8px 16px',
                           fontSize: 13,
-                          color: '#6b7280',
+                          color: theme.colors.textMuted,
                           backgroundColor: 'transparent',
-                          border: '1px solid #e5e5eb',
+                          border: `1px solid ${theme.colors.border}`,
                           borderRadius: 8,
                           cursor: 'pointer',
                         }}
@@ -763,18 +852,18 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                     <div style={{
                       marginTop: 12,
                       padding: 16,
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e5eb',
+                      backgroundColor: theme.colors.card,
+                      border: `1px solid ${theme.colors.border}`,
                       borderRadius: 10,
                     }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: '#1e1e2e', margin: '0 0 16px 0' }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: theme.colors.text, margin: '0 0 16px 0' }}>
                         Create New Task
                       </p>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {/* Task name */}
                         <div>
-                          <label style={{ fontSize: 12, fontWeight: 500, color: '#6b7280', display: 'block', marginBottom: 4 }}>
+                          <label style={{ fontSize: 12, fontWeight: 500, color: theme.colors.textMuted, display: 'block', marginBottom: 4 }}>
                             Task Name *
                           </label>
                           <input
@@ -787,20 +876,21 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                               padding: '10px 12px',
                               fontSize: 14,
                               borderRadius: 8,
-                              border: '1px solid #e5e5eb',
-                              backgroundColor: '#f9fafb',
+                              border: `1px solid ${theme.colors.border}`,
+                              backgroundColor: theme.colors.inputBg,
+                              color: theme.colors.text,
                               outline: 'none',
                               boxSizing: 'border-box',
                             }}
-                            onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
-                            onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
+                            onFocus={(e) => e.currentTarget.style.borderColor = theme.colors.primary}
+                            onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.border}
                             autoFocus
                           />
                         </div>
 
                         {/* Task description */}
                         <div>
-                          <label style={{ fontSize: 12, fontWeight: 500, color: '#6b7280', display: 'block', marginBottom: 4 }}>
+                          <label style={{ fontSize: 12, fontWeight: 500, color: theme.colors.textMuted, display: 'block', marginBottom: 4 }}>
                             Description
                           </label>
                           <textarea
@@ -813,21 +903,22 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                               padding: '10px 12px',
                               fontSize: 14,
                               borderRadius: 8,
-                              border: '1px solid #e5e5eb',
-                              backgroundColor: '#f9fafb',
+                              border: `1px solid ${theme.colors.border}`,
+                              backgroundColor: theme.colors.inputBg,
+                              color: theme.colors.text,
                               outline: 'none',
                               boxSizing: 'border-box',
                               resize: 'none',
                               fontFamily: 'inherit',
                             }}
-                            onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
-                            onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
+                            onFocus={(e) => e.currentTarget.style.borderColor = theme.colors.primary}
+                            onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.border}
                           />
                         </div>
 
                         {/* Category selector */}
                         <div>
-                          <label style={{ fontSize: 12, fontWeight: 500, color: '#6b7280', display: 'block', marginBottom: 4 }}>
+                          <label style={{ fontSize: 12, fontWeight: 500, color: theme.colors.textMuted, display: 'block', marginBottom: 4 }}>
                             Category
                           </label>
                           <select
@@ -838,8 +929,9 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                               padding: '10px 12px',
                               fontSize: 14,
                               borderRadius: 8,
-                              border: '1px solid #e5e5eb',
-                              backgroundColor: '#f9fafb',
+                              border: `1px solid ${theme.colors.border}`,
+                              backgroundColor: theme.colors.inputBg,
+                              color: theme.colors.text,
                               outline: 'none',
                               cursor: 'pointer',
                             }}
@@ -866,9 +958,9 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                             padding: '10px 16px',
                             fontSize: 13,
                             fontWeight: 500,
-                            color: '#6b7280',
-                            backgroundColor: '#fff',
-                            border: '1px solid #e5e5eb',
+                            color: theme.colors.textMuted,
+                            backgroundColor: theme.colors.card,
+                            border: `1px solid ${theme.colors.border}`,
                             borderRadius: 8,
                             cursor: 'pointer',
                           }}
@@ -883,8 +975,8 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                             padding: '10px 16px',
                             fontSize: 13,
                             fontWeight: 600,
-                            color: newTaskName.trim() ? '#fff' : '#9ca3af',
-                            backgroundColor: newTaskName.trim() ? '#7c3aed' : '#e5e5eb',
+                            color: newTaskName.trim() ? '#fff' : theme.colors.textMuted,
+                            backgroundColor: newTaskName.trim() ? theme.colors.primary : theme.colors.border,
                             border: 'none',
                             borderRadius: 8,
                             cursor: newTaskName.trim() ? 'pointer' : 'not-allowed',
@@ -902,13 +994,14 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                   <h3 style={{
                     fontSize: 13,
                     fontWeight: 600,
-                    color: '#6b7280',
+                    color: theme.colors.textMuted,
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
                     margin: '0 0 12px 0',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
+                    transition: 'all 0.3s ease',
                   }}>
                     <MessageCircle style={{ width: 14, height: 14 }} />
                     Comments ({comments.length})
@@ -925,7 +1018,7 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                       <div style={{
                         padding: 16,
                         textAlign: 'center',
-                        color: '#9ca3af',
+                        color: theme.colors.textMuted,
                         fontSize: 14,
                       }}>
                         Loading comments...
@@ -934,13 +1027,13 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                       <div style={{
                         padding: 20,
                         textAlign: 'center',
-                        color: '#9ca3af',
+                        color: theme.colors.textMuted,
                         fontSize: 14,
-                        backgroundColor: '#f9fafb',
+                        backgroundColor: theme.colors.inputBg,
                         borderRadius: 10,
-                        border: '1px dashed #e5e5eb',
+                        border: `1px dashed ${theme.colors.border}`,
                       }}>
-                        No comments yet. Add one to discuss this sprint.
+                        No comments yet. Add one to discuss this goal.
                       </div>
                     ) : (
                       comments.map((comment) => {
@@ -952,10 +1045,10 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             style={{
-                              backgroundColor: '#f9fafb',
+                              backgroundColor: theme.colors.inputBg,
                               borderRadius: 10,
                               padding: 14,
-                              border: '1px solid #e5e5eb',
+                              border: `1px solid ${theme.colors.border}`,
                             }}
                           >
                             <div style={{
@@ -973,7 +1066,7 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                                   width: 28,
                                   height: 28,
                                   borderRadius: '50%',
-                                  backgroundColor: '#7c3aed',
+                                  backgroundColor: theme.colors.primary,
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
@@ -987,13 +1080,13 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                                   <span style={{
                                     fontSize: 13,
                                     fontWeight: 600,
-                                    color: '#1e1e2e',
+                                    color: theme.colors.text,
                                   }}>
                                     {authorName}
                                   </span>
                                   <span style={{
                                     fontSize: 12,
-                                    color: '#9ca3af',
+                                    color: theme.colors.textMuted,
                                     marginLeft: 8,
                                   }}>
                                     {formatCommentDate(comment.created_at)}
@@ -1012,17 +1105,17 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                                     borderRadius: 6,
                                     border: 'none',
                                     backgroundColor: 'transparent',
-                                    color: '#9ca3af',
+                                    color: theme.colors.textMuted,
                                     cursor: 'pointer',
                                     transition: 'all 0.15s ease',
                                   }}
                                   onMouseOver={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-                                    e.currentTarget.style.color = '#ef4444';
+                                    e.currentTarget.style.backgroundColor = `${theme.colors.error}15`;
+                                    e.currentTarget.style.color = theme.colors.error;
                                   }}
                                   onMouseOut={(e) => {
                                     e.currentTarget.style.backgroundColor = 'transparent';
-                                    e.currentTarget.style.color = '#9ca3af';
+                                    e.currentTarget.style.color = theme.colors.textMuted;
                                   }}
                                   title="Delete comment"
                                 >
@@ -1032,7 +1125,7 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                             </div>
                             <p style={{
                               fontSize: 14,
-                              color: '#4b5563',
+                              color: theme.colors.textMuted,
                               lineHeight: 1.5,
                               margin: 0,
                               whiteSpace: 'pre-wrap',
@@ -1065,13 +1158,14 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                         flex: 1,
                         padding: '10px 14px',
                         borderRadius: 8,
-                        border: '1px solid #e5e5eb',
-                        backgroundColor: '#fff',
+                        border: `1px solid ${theme.colors.border}`,
+                        backgroundColor: theme.colors.card,
+                        color: theme.colors.text,
                         fontSize: 14,
                         outline: 'none',
                       }}
-                      onFocus={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
-                      onBlur={(e) => e.currentTarget.style.borderColor = '#e5e5eb'}
+                      onFocus={(e) => e.currentTarget.style.borderColor = theme.colors.primary}
+                      onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.border}
                     />
                     <button
                       onClick={handleAddComment}
@@ -1083,8 +1177,8 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                         padding: '10px 16px',
                         borderRadius: 8,
                         border: 'none',
-                        backgroundColor: newComment.trim() ? '#7c3aed' : '#e5e5eb',
-                        color: newComment.trim() ? '#fff' : '#9ca3af',
+                        backgroundColor: newComment.trim() ? theme.colors.primary : theme.colors.border,
+                        color: newComment.trim() ? '#fff' : theme.colors.textMuted,
                         fontSize: 14,
                         fontWeight: 500,
                         cursor: newComment.trim() ? 'pointer' : 'not-allowed',
@@ -1102,11 +1196,12 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
               {/* Footer */}
               <div style={{
                 padding: '16px 24px',
-                borderTop: '1px solid #e5e5eb',
-                backgroundColor: '#fafafa',
+                borderTop: `1px solid ${theme.colors.border}`,
+                backgroundColor: theme.colors.inputBg,
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
+                transition: 'all 0.3s ease',
               }}>
                 {isEditing ? (
                   <>
@@ -1116,9 +1211,9 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                         padding: '10px 20px',
                         fontSize: 14,
                         fontWeight: 500,
-                        color: '#6b7280',
-                        backgroundColor: '#fff',
-                        border: '1px solid #e5e5eb',
+                        color: theme.colors.textMuted,
+                        backgroundColor: theme.colors.card,
+                        border: `1px solid ${theme.colors.border}`,
                         borderRadius: 10,
                         cursor: 'pointer',
                       }}
@@ -1133,7 +1228,7 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                         fontSize: 14,
                         fontWeight: 600,
                         color: '#fff',
-                        backgroundColor: editName.trim() ? '#7c3aed' : '#d1d5db',
+                        backgroundColor: editName.trim() ? theme.colors.primary : theme.colors.border,
                         border: 'none',
                         borderRadius: 10,
                         cursor: editName.trim() ? 'pointer' : 'not-allowed',
@@ -1150,9 +1245,9 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                         padding: '10px 20px',
                         fontSize: 14,
                         fontWeight: 500,
-                        color: '#ef4444',
+                        color: theme.colors.error,
                         backgroundColor: 'transparent',
-                        border: '1px solid #fca5a5',
+                        border: `1px solid ${theme.colors.error}50`,
                         borderRadius: 10,
                         cursor: 'pointer',
                       }}
@@ -1162,7 +1257,7 @@ export function SprintDetailModal({ sprint, isOpen, onClose }: SprintDetailModal
                     </button>
 
                     <div style={{ display: 'flex', gap: 12 }}>
-                      {/* No manual completion button - sprints auto-complete */}
+                      {/* No manual completion button - goals auto-complete */}
                     </div>
                   </>
                 )}

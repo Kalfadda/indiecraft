@@ -4,12 +4,14 @@ import { useRequests } from "../hooks/useRequests";
 import { useRequestRealtime } from "../hooks/useRequestRealtime";
 import { RequestList } from "./RequestList";
 import { RequestForm } from "./RequestForm";
+import { useTheme } from "@/stores/themeStore";
 import type { ModelRequestStatus } from "@/types/database";
 
 type RequestTab = "open" | "denied";
 
 export function ModelingView() {
   const [activeTab, setActiveTab] = useState<RequestTab>("open");
+  const theme = useTheme();
 
   // Enable real-time updates
   useRequestRealtime();
@@ -47,18 +49,20 @@ export function ModelingView() {
           <h2 style={{
             fontSize: 26,
             fontWeight: 700,
-            color: '#1e1e2e',
+            color: theme.colors.text,
             marginBottom: 6,
             margin: 0,
+            transition: 'all 0.3s ease',
           }}>
-            Model Requests
+            Asset Requests
           </h2>
           <p style={{
             fontSize: 14,
-            color: '#6b7280',
+            color: theme.colors.textMuted,
             margin: 0,
+            transition: 'all 0.3s ease',
           }}>
-            Request assets from the modeling team
+            Request assets from a 3D artist
           </p>
         </div>
 
@@ -69,8 +73,9 @@ export function ModelingView() {
       <div style={{
         display: 'flex',
         gap: 8,
-        borderBottom: '1px solid #e5e5eb',
+        borderBottom: `1px solid ${theme.colors.border}`,
         paddingBottom: 0,
+        transition: 'all 0.3s ease',
       }}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -85,22 +90,22 @@ export function ModelingView() {
                 padding: '12px 16px',
                 fontSize: 14,
                 fontWeight: 500,
-                color: isActive ? '#7c3aed' : '#6b7280',
+                color: isActive ? theme.colors.primary : theme.colors.textMuted,
                 backgroundColor: 'transparent',
                 border: 'none',
-                borderBottom: isActive ? '2px solid #7c3aed' : '2px solid transparent',
+                borderBottom: isActive ? `2px solid ${theme.colors.primary}` : '2px solid transparent',
                 cursor: 'pointer',
-                transition: 'all 0.15s ease',
+                transition: 'all 0.3s ease',
                 marginBottom: -1,
               }}
               onMouseOver={(e) => {
                 if (!isActive) {
-                  e.currentTarget.style.color = '#4b5563';
+                  e.currentTarget.style.color = theme.colors.textSecondary;
                 }
               }}
               onMouseOut={(e) => {
                 if (!isActive) {
-                  e.currentTarget.style.color = '#6b7280';
+                  e.currentTarget.style.color = theme.colors.textMuted;
                 }
               }}
             >
@@ -112,8 +117,9 @@ export function ModelingView() {
                   borderRadius: 999,
                   fontSize: 12,
                   fontWeight: 600,
-                  backgroundColor: isActive ? 'rgba(124, 58, 237, 0.15)' : '#f0f0f5',
-                  color: isActive ? '#7c3aed' : '#6b7280',
+                  backgroundColor: isActive ? theme.colors.primaryLight : theme.colors.pillBg,
+                  color: isActive ? theme.colors.primary : theme.colors.textMuted,
+                  transition: 'all 0.3s ease',
                 }}>
                   {tab.count}
                 </span>

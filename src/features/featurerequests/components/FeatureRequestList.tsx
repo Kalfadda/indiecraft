@@ -5,6 +5,7 @@ import { useFeatureRequests, type FeatureRequestWithCreator } from "../hooks/use
 import { useFeatureRequestMutations } from "../hooks/useFeatureRequestMutations";
 import { FeatureRequestCard } from "./FeatureRequestCard";
 import { FeatureRequestDetailModal } from "./FeatureRequestDetailModal";
+import { useTheme } from "@/stores/themeStore";
 import type { FeatureRequestStatus } from "@/types/database";
 
 interface FeatureRequestListProps {
@@ -12,6 +13,7 @@ interface FeatureRequestListProps {
 }
 
 export function FeatureRequestList({ status }: FeatureRequestListProps) {
+  const theme = useTheme();
   const { data: requests, isLoading, error } = useFeatureRequests({ status });
   const { acceptRequest, denyRequest, deleteRequest } = useFeatureRequestMutations();
 
@@ -68,7 +70,8 @@ export function FeatureRequestList({ status }: FeatureRequestListProps) {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '64px 24px',
-        color: '#9ca3af',
+        color: theme.colors.textMuted,
+        transition: 'all 0.3s ease',
       }}>
         <Loader2
           style={{
@@ -87,11 +90,12 @@ export function FeatureRequestList({ status }: FeatureRequestListProps) {
     return (
       <div style={{
         padding: '32px 24px',
-        backgroundColor: 'rgba(239, 68, 68, 0.08)',
+        backgroundColor: theme.colors.errorBg,
         borderRadius: 12,
-        border: '1px solid rgba(239, 68, 68, 0.2)',
-        color: '#ef4444',
+        border: `1px solid ${theme.colors.error}`,
+        color: theme.colors.error,
         textAlign: 'center',
+        transition: 'all 0.3s ease',
       }}>
         <p style={{ margin: 0, fontSize: 14 }}>
           Failed to load requests. Please try again.
@@ -108,10 +112,11 @@ export function FeatureRequestList({ status }: FeatureRequestListProps) {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '64px 24px',
-        color: '#9ca3af',
+        color: theme.colors.textMuted,
+        transition: 'all 0.3s ease',
       }}>
         <FileQuestion style={{ width: 48, height: 48, marginBottom: 16, opacity: 0.5 }} />
-        <p style={{ margin: 0, fontSize: 16, fontWeight: 500, color: '#6b7280' }}>
+        <p style={{ margin: 0, fontSize: 16, fontWeight: 500, color: theme.colors.textSecondary }}>
           {status === "open" ? "No open requests" : "No denied requests"}
         </p>
         <p style={{ margin: '8px 0 0 0', fontSize: 14 }}>
