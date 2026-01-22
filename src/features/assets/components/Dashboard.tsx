@@ -7,6 +7,7 @@ import { useAssets, useAsset } from "../hooks/useAssets";
 import { useAssetMutations } from "../hooks/useAssetMutations";
 import { useAssetRealtime } from "../hooks/useAssetRealtime";
 import { useCommentRealtime } from "../hooks/useCommentRealtime";
+import { useNotificationRealtime } from "@/features/notifications/hooks/useNotificationRealtime";
 import { useNavigationStore } from "@/stores/navigationStore";
 import { AssetList } from "./AssetList";
 import { AssetForm } from "./AssetForm";
@@ -104,6 +105,7 @@ export function Dashboard() {
 
   useAssetRealtime();
   useCommentRealtime();
+  useNotificationRealtime();
 
   const toolItems: ToolItem[] = [
     { id: "compare", label: "Compare", icon: <GitCompare style={{ width: 18, height: 18 }} /> },
