@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IndieCraft - Project Management That Actually Makes Sense</title>
+    <meta name="description" content="The open-source project management app built for indie game dev teams. Goals drive tasks. Ships happen.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --purple: #7c3aed;
+            --purple-dark: #6d28d9;
+            --purple-light: #a78bfa;
+            --dark: #0f0f1a;
+            --dark-light: #1a1a2e;
+            --gray: #6b7280;
+            --gray-light: #9ca3af;
+            --white: #ffffff;
+            --green: #10b981;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--dark);
+            color: var(--white);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated gradient background */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+                var(--dark);
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%237c3aed' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(124, 58, 237, 0.2);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            border-radius: 50px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--purple-light);
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.6s ease-out 0.1s both;
+        }
+
+        h1 span {
+            background: linear-gradient(135deg, var(--purple-light), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: clamp(1.125rem, 3vw, 1.5rem);
+            color: var(--gray-light);
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        .cta-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 0.6s ease-out 0.3s both;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--purple);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--purple-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(124, 58, 237, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--white);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+        }
+
+        .scroll-indicator svg {
+            width: 32px;
+            height: 32px;
+            color: var(--gray);
+        }
+
+        /* Sections */
+        section {
+            padding: 6rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .section-header p {
+            font-size: 1.125rem;
+            color: var(--gray-light);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Problem Section */
+        .problem {
+            background: linear-gradient(180deg, var(--dark) 0%, var(--dark-light) 100%);
+        }
+
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .problem-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .problem-card:hover {
+            border-color: rgba(124, 58, 237, 0.3);
+            transform: translateY(-4px);
+        }
+
+        .problem-card .icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .problem-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .problem-card p {
+            color: var(--gray-light);
+            font-size: 0.95rem;
+        }
+
+        /* Philosophy Section */
+        .philosophy {
+            background: var(--dark-light);
+        }
+
+        .philosophy-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .philosophy-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+        }
+
+        .philosophy-text h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--purple-light);
+        }
+
+        .philosophy-text p {
+            color: var(--gray-light);
+            margin-bottom: 1.5rem;
+        }
+
+        .philosophy-visual {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .flow-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.25rem;
+            background: rgba(124, 58, 237, 0.1);
+            border: 1px solid rgba(124, 58, 237, 0.2);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .flow-item:hover {
+            background: rgba(124, 58, 237, 0.15);
+            transform: translateX(8px);
+        }
+
+        .flow-item .number {
+            width: 40px;
+            height: 40px;
+            background: var(--purple);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .flow-item span {
+            font-weight: 500;
+        }
+
+        .flow-arrow {
+            display: flex;
+            justify-content: center;
+            color: var(--purple);
+            font-size: 1.5rem;
+        }
+
+        /* Features Section */
+        .features {
+            background: var(--dark);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, rgba(124, 58, 237, 0.02) 100%);
+            border: 1px solid rgba(124, 58, 237, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(124, 58, 237, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .feature-card .icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(124, 58, 237, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+            font-size: 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.125rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card p {
+            color: var(--gray-light);
+            font-size: 0.95rem;
+        }
+
+        /* Self-hosted Section */
+        .self-hosted {
+            background: linear-gradient(180deg, var(--dark) 0%, var(--dark-light) 100%);
+            text-align: center;
+        }
+
+        .self-hosted-content {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .self-hosted h2 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            margin-bottom: 1.5rem;
+        }
+
+        .self-hosted p {
+            font-size: 1.25rem;
+            color: var(--gray-light);
+            margin-bottom: 2rem;
+        }
+
+        .benefits {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .benefit {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--green);
+            font-weight: 500;
+        }
+
+        .benefit svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* CTA Section */
+        .cta {
+            background: var(--dark-light);
+            text-align: center;
+        }
+
+        .cta-box {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(124, 58, 237, 0.05) 100%);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            border-radius: 24px;
+            padding: 4rem 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .cta h2 {
+            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            margin-bottom: 1rem;
+        }
+
+        .cta p {
+            color: var(--gray-light);
+            margin-bottom: 2rem;
+            font-size: 1.125rem;
+        }
+
+        .cta .steps {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 2.5rem;
+        }
+
+        .cta .step {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50px;
+            font-size: 0.95rem;
+        }
+
+        .cta .step-num {
+            width: 24px;
+            height: 24px;
+            background: var(--purple);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            background: var(--dark);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        footer p {
+            color: var(--gray);
+        }
+
+        footer a {
+            color: var(--purple-light);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            40% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+            60% {
+                transform: translateX(-50%) translateY(-5px);
+            }
+        }
+
+        /* Scroll animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease-out;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="badge">Open Source & Self-Hosted</div>
+            <h1>Project management that <span>actually makes sense.</span></h1>
+            <p class="subtitle">Most tools treat tasks like a grocery list. IndieCraft treats them like what they are: steps toward something bigger.</p>
+            <div class="cta-group">
+                <a href="https://github.com/Kalfadda/indiecraft/releases/latest" class="btn btn-primary">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    Download for Windows
+                </a>
+                <a href="https://github.com/Kalfadda/indiecraft" class="btn btn-secondary">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    View on GitHub
+                </a>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+        </div>
+    </section>
+
+    <!-- Problem -->
+    <section class="problem">
+        <div class="section-header fade-in">
+            <h2>The Problem</h2>
+            <p>Enterprise tools weren't built for you. They were built for 500-person orgs with dedicated project managers.</p>
+        </div>
+        <div class="problem-grid">
+            <div class="problem-card fade-in">
+                <div class="icon">📊</div>
+                <h3>Dashboard Overload</h3>
+                <p>Buried in burndown charts, velocity metrics, and reports nobody reads.</p>
+            </div>
+            <div class="problem-card fade-in">
+                <div class="icon">🎭</div>
+                <h3>Ceremony Theater</h3>
+                <p>Stand-ups, sprint planning, retrospectives - process for the sake of process.</p>
+            </div>
+            <div class="problem-card fade-in">
+                <div class="icon">💸</div>
+                <h3>Per-Seat Pricing</h3>
+                <p>Monthly fees that grow with your team. Your data held hostage.</p>
+            </div>
+            <div class="problem-card fade-in">
+                <div class="icon">🏢</div>
+                <h3>Corporate Workflows</h3>
+                <p>Built for cross-functional visibility, not shipping games.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Philosophy -->
+    <section class="philosophy">
+        <div class="section-header fade-in">
+            <h2>The Solution</h2>
+            <p>One core idea: <strong>Goals drive tasks, not the other way around.</strong></p>
+        </div>
+        <div class="philosophy-content">
+            <div class="philosophy-text fade-in">
+                <h3>Goals First</h3>
+                <p>Start with what you're trying to accomplish. A milestone. A feature. A deliverable. Give it a target date. That's your goal.</p>
+                
+                <h3>Tasks Serve Goals</h3>
+                <p>Break it down. Art assets, code features, audio, documentation - each task links to the goal it serves. Nothing floats in limbo.</p>
+                
+                <h3>Sprints Emerge Naturally</h3>
+                <p>When you organize around goals, sprints happen organically - clusters of tasks that ship together because they belong together.</p>
+            </div>
+            <div class="philosophy-visual fade-in">
+                <div class="flow-item">
+                    <div class="number">1</div>
+                    <span>Define your Goal</span>
+                </div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-item">
+                    <div class="number">2</div>
+                    <span>Break into Tasks</span>
+                </div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-item">
+                    <div class="number">3</div>
+                    <span>Watch progress build</span>
+                </div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-item">
+                    <div class="number">4</div>
+                    <span>Ship & repeat</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features">
+        <div class="section-header fade-in">
+            <h2>What You Get</h2>
+            <p>Everything you need. Nothing you don't.</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card fade-in">
+                <div class="icon">🎯</div>
+                <h3>Goals & Roadmapping</h3>
+                <p>The big picture with target dates and visual progress tracking.</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="icon">✅</div>
+                <h3>Task Management</h3>
+                <p>Organized by what matters: Art, Code, Audio, Design, Docs, Marketing.</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="icon">📅</div>
+                <h3>Schedule & Calendar</h3>
+                <p>Milestones and deliverables on a timeline. Export to ICS.</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="icon">💡</div>
+                <h3>Request Systems</h3>
+                <p>Let your team suggest assets and features without derailing focus.</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="icon">📌</div>
+                <h3>Bulletin Board</h3>
+                <p>Quick notes, announcements, reminders - no meeting required.</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="icon">⚡</div>
+                <h3>Real-Time Sync</h3>
+                <p>Everyone sees the same state, always. No refresh needed.</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="icon">🔗</div>
+                <h3>Task Dependencies</h3>
+                <p>Know what's blocked and why. See the critical path.</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="icon">🎨</div>
+                <h3>Multiple Themes</h3>
+                <p>Light and dark modes. Make it yours.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Self-hosted -->
+    <section class="self-hosted">
+        <div class="self-hosted-content fade-in">
+            <h2>Self-Hosted, Self-Owned</h2>
+            <p>Your data lives in your own Supabase instance. Set up takes five minutes. The app walks you through it.</p>
+            <div class="benefits">
+                <div class="benefit">
+                    <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                    No monthly fees
+                </div>
+                <div class="benefit">
+                    <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                    No per-seat pricing
+                </div>
+                <div class="benefit">
+                    <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                    No vendor lock-in
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+        <div class="cta-box fade-in">
+            <h2>Ready to ship?</h2>
+            <p>Get started in four steps.</p>
+            <div class="steps">
+                <div class="step"><span class="step-num">1</span> Download</div>
+                <div class="step"><span class="step-num">2</span> Setup wizard</div>
+                <div class="step"><span class="step-num">3</span> Create a goal</div>
+                <div class="step"><span class="step-num">4</span> Ship something</div>
+            </div>
+            <a href="https://github.com/Kalfadda/indiecraft/releases/latest" class="btn btn-primary">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                Download IndieCraft
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>Built by <a href="https://scythedevteam.com">Scythe Dev Team</a> — the studio behind Happy's Humble Burger Farm.</p>
+    </footer>
+
+    <script>
+        // Scroll animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>
