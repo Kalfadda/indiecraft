@@ -16,11 +16,12 @@
         }
 
         :root {
-            --purple: #7c3aed;
-            --purple-dark: #6d28d9;
-            --purple-light: #a78bfa;
-            --dark: #0f0f1a;
-            --dark-light: #1a1a2e;
+            --primary: #1e40af;
+            --primary-dark: #1e3a8a;
+            --primary-light: #60a5fa;
+            --accent: #3b82f6;
+            --dark: #0a0f1a;
+            --dark-light: #111827;
             --gray: #6b7280;
             --gray-light: #9ca3af;
             --white: #ffffff;
@@ -50,8 +51,8 @@
             padding: 2rem;
             position: relative;
             background: 
-                radial-gradient(ellipse at 20% 20%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 20% 20%, rgba(30, 64, 175, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(30, 64, 175, 0.1) 0%, transparent 50%),
                 var(--dark);
         }
 
@@ -75,12 +76,12 @@
         .badge {
             display: inline-block;
             padding: 0.5rem 1rem;
-            background: rgba(124, 58, 237, 0.2);
-            border: 1px solid rgba(124, 58, 237, 0.3);
+            background: rgba(30, 64, 175, 0.2);
+            border: 1px solid rgba(30, 64, 175, 0.3);
             border-radius: 50px;
             font-size: 0.875rem;
             font-weight: 500;
-            color: var(--purple-light);
+            color: var(--primary-light);
             margin-bottom: 1.5rem;
             animation: fadeInUp 0.6s ease-out;
         }
@@ -94,7 +95,7 @@
         }
 
         h1 span {
-            background: linear-gradient(135deg, var(--purple-light), var(--purple));
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -131,14 +132,14 @@
         }
 
         .btn-primary {
-            background: var(--purple);
+            background: var(--primary);
             color: var(--white);
         }
 
         .btn-primary:hover {
-            background: var(--purple-dark);
+            background: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 10px 40px rgba(124, 58, 237, 0.3);
+            box-shadow: 0 10px 40px rgba(30, 64, 175, 0.3);
         }
 
         .btn-secondary {
@@ -211,7 +212,7 @@
         }
 
         .problem-card:hover {
-            border-color: rgba(124, 58, 237, 0.3);
+            border-color: rgba(30, 64, 175, 0.3);
             transform: translateY(-4px);
         }
 
@@ -259,7 +260,7 @@
         .philosophy-text h3 {
             font-size: 1.5rem;
             margin-bottom: 1rem;
-            color: var(--purple-light);
+            color: var(--primary-light);
         }
 
         .philosophy-text p {
@@ -278,21 +279,21 @@
             align-items: center;
             gap: 1rem;
             padding: 1.25rem;
-            background: rgba(124, 58, 237, 0.1);
-            border: 1px solid rgba(124, 58, 237, 0.2);
+            background: rgba(30, 64, 175, 0.1);
+            border: 1px solid rgba(30, 64, 175, 0.2);
             border-radius: 12px;
             transition: all 0.3s ease;
         }
 
         .flow-item:hover {
-            background: rgba(124, 58, 237, 0.15);
+            background: rgba(30, 64, 175, 0.15);
             transform: translateX(8px);
         }
 
         .flow-item .number {
             width: 40px;
             height: 40px;
-            background: var(--purple);
+            background: var(--primary);
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -308,7 +309,7 @@
         .flow-arrow {
             display: flex;
             justify-content: center;
-            color: var(--purple);
+            color: var(--primary);
             font-size: 1.5rem;
         }
 
@@ -324,15 +325,15 @@
         }
 
         .feature-card {
-            background: linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, rgba(124, 58, 237, 0.02) 100%);
-            border: 1px solid rgba(124, 58, 237, 0.1);
+            background: linear-gradient(135deg, rgba(30, 64, 175, 0.05) 0%, rgba(30, 64, 175, 0.02) 100%);
+            border: 1px solid rgba(30, 64, 175, 0.1);
             border-radius: 16px;
             padding: 2rem;
             transition: all 0.3s ease;
         }
 
         .feature-card:hover {
-            border-color: rgba(124, 58, 237, 0.3);
+            border-color: rgba(30, 64, 175, 0.3);
             transform: translateY(-4px);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
         }
@@ -340,7 +341,7 @@
         .feature-card .icon {
             width: 48px;
             height: 48px;
-            background: rgba(124, 58, 237, 0.2);
+            background: rgba(30, 64, 175, 0.2);
             border-radius: 12px;
             display: flex;
             align-items: center;
@@ -409,8 +410,8 @@
         }
 
         .cta-box {
-            background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(124, 58, 237, 0.05) 100%);
-            border: 1px solid rgba(124, 58, 237, 0.3);
+            background: linear-gradient(135deg, rgba(30, 64, 175, 0.2) 0%, rgba(30, 64, 175, 0.05) 100%);
+            border: 1px solid rgba(30, 64, 175, 0.3);
             border-radius: 24px;
             padding: 4rem 2rem;
             max-width: 800px;
@@ -449,7 +450,7 @@
         .cta .step-num {
             width: 24px;
             height: 24px;
-            background: var(--purple);
+            background: var(--primary);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -517,7 +518,7 @@
         }
 
         footer a {
-            color: var(--purple-light);
+            color: var(--primary-light);
             text-decoration: none;
         }
 
@@ -749,7 +750,7 @@
     <!-- Support -->
     <section class="support">
         <div class="support-content fade-in">
-            <div class="support-icon">💜</div>
+            <div class="support-icon">💙</div>
             <h3>Support IndieCraft</h3>
             <p>IndieCraft is free and open source. Donations help keep it that way - funding development, new features, and keeping the project alive for indie teams everywhere.</p>
             <a href="https://www.paypal.com/paypalme/KFDDA" class="btn btn-donate" target="_blank" rel="noopener">
