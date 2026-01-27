@@ -73,4 +73,23 @@ Set up takes five minutes. The app walks you through it.
 
 ---
 
+## Changelog
+
+### v0.2.0
+- **Config Export/Import** - Share your Supabase connection as a `.json` file so teammates can skip manual setup
+- **Settings Modal** - New gear icon in the sidebar to view connection info and export config
+- **Login Screen Reconfiguration** - Import a config file or re-run the setup wizard directly from the login page
+- **Setup Wizard Import Flow** - Importing a config auto-validates the connection and skips the schema step
+
+### v0.1.0
+- Initial release
+- Goal-driven task management with four-stage workflow
+- Schedule with calendar and list views
+- Modeling and feature request systems
+- Bulletin board, notifications, and real-time sync
+- Library with 3D model preview and audio player
+- Self-hosted via Supabase (BYOD)
+
+---
+
 **Built by [Scythe Dev Team](https://scythedevteam.com)** - the studio behind Happy's Humble Burger Farm.
