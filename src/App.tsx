@@ -7,7 +7,7 @@ import { Dashboard } from "./features/assets";
 import { NotificationContainer } from "./components/notifications";
 import { SetupWizard } from "./features/setup";
 import { sendHeartbeat } from "./lib/heartbeat";
-import { loadConfig } from "./lib/supabaseConfig";
+import { loadConfig, clearConfigCache } from "./lib/supabaseConfig";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -98,7 +98,10 @@ function App() {
       <BrowserRouter>
         <NotificationContainer />
         <Routes>
-          <Route path="/login" element={<AuthPage />} />
+          <Route path="/login" element={<AuthPage onReconfigure={() => {
+            clearConfigCache();
+            setAppState("setup");
+          }} />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Dashboard />} />
           </Route>

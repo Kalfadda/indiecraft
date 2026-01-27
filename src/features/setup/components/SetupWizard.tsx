@@ -32,7 +32,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
     });
   }, []);
 
-  const handleConnectionComplete = async (url: string, key: string) => {
+  const handleConnectionComplete = async (url: string, key: string, skipSchemaCheck?: boolean) => {
     setSupabaseUrl(url);
     setSupabaseAnonKey(key);
 
@@ -43,7 +43,11 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       schemaInitialized: false,
     });
 
-    setStep("schema");
+    if (skipSchemaCheck) {
+      setStep("complete");
+    } else {
+      setStep("schema");
+    }
   };
 
   const handleSchemaComplete = () => {

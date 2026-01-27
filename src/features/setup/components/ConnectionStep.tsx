@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { Database, Loader2, CheckCircle, XCircle, ExternalLink } from "lucide-react";
+import { Database, Loader2, CheckCircle, XCircle, ExternalLink, Upload } from "lucide-react";
 import { validateConnection } from "../../../lib/supabaseConfig";
+import { importConfig } from "../../../lib/configExportImport";
 
 interface ConnectionStepProps {
-  onComplete: (url: string, anonKey: string) => void;
+  onComplete: (url: string, anonKey: string, skipSchemaCheck?: boolean) => void;
   initialUrl?: string;
   initialKey?: string;
 }
@@ -14,8 +15,9 @@ export function ConnectionStep({ onComplete, initialUrl = "", initialKey = "" }:
   const [anonKey, setAnonKey] = useState(initialKey);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null);
+  const [importing, setImporting] = useState(false);
 
-  const handleTest = async () => {
+  const handleTest = async (skipSchema?: boolean) => {
     setTesting(true);
     setTestResult(null);
 
@@ -25,7 +27,42 @@ export function ConnectionStep({ onComplete, initialUrl = "", initialKey = "" }:
 
     if (result.success) {
       // Auto-advance after successful test
-      setTimeout(() => onComplete(url, anonKey), 1000);
+      setTimeout(() => onComplete(url, anonKey, skipSchema), 1000);
+    }
+  };
+
+  const handleImport = async () => {
+    setImporting(true);
+    setTestResult(null);
+
+    try {
+      const config = await importConfig();
+      if (!config) {
+        // User cancelled the dialog
+        setImporting(false);
+        return;
+      }
+
+      // Populate the fields
+      setUrl(config.supabaseUrl);
+      setAnonKey(config.supabaseAnonKey);
+      setImporting(false);
+
+      // Auto-test the imported connection, skip schema step on success
+      setTesting(true);
+      const result = await validateConnection(config.supabaseUrl, config.supabaseAnonKey);
+      setTestResult(result);
+      setTesting(false);
+
+      if (result.success) {
+        setTimeout(() => onComplete(config.supabaseUrl, config.supabaseAnonKey, true), 1000);
+      }
+    } catch (err) {
+      setImporting(false);
+      setTestResult({
+        success: false,
+        error: err instanceof Error ? err.message : "Import failed",
+      });
     }
   };
 
@@ -65,6 +102,54 @@ export function ConnectionStep({ onComplete, initialUrl = "", initialKey = "" }:
         <p style={{ color: "#6b7280", marginTop: 8 }}>
           Enter your Supabase project credentials to get started.
         </p>
+      </div>
+
+      {/* Import Config Button */}
+      <button
+        onClick={handleImport}
+        disabled={importing || testing}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          padding: "12px 24px",
+          fontSize: 14,
+          fontWeight: 600,
+          color: "#7c3aed",
+          backgroundColor: "#f3f0ff",
+          border: "2px solid #7c3aed",
+          borderRadius: 8,
+          cursor: importing || testing ? "not-allowed" : "pointer",
+          transition: "background-color 0.2s",
+        }}
+      >
+        {importing ? (
+          <>
+            <Loader2 style={{ width: 18, height: 18, animation: "spin 1s linear infinite" }} />
+            Importing...
+          </>
+        ) : (
+          <>
+            <Upload style={{ width: 18, height: 18 }} />
+            Import Config File
+          </>
+        )}
+      </button>
+
+      {/* Divider */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        <div style={{ flex: 1, height: 1, backgroundColor: "#e5e7eb" }} />
+        <span style={{ fontSize: 13, color: "#9ca3af", whiteSpace: "nowrap" }}>
+          or enter manually
+        </span>
+        <div style={{ flex: 1, height: 1, backgroundColor: "#e5e7eb" }} />
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -186,7 +271,7 @@ export function ConnectionStep({ onComplete, initialUrl = "", initialKey = "" }:
       )}
 
       <button
-        onClick={handleTest}
+        onClick={() => handleTest()}
         disabled={!canTest || testing}
         style={{
           display: "flex",

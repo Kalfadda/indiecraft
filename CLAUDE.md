@@ -1,25 +1,16 @@
 # Claude Code Instructions
 
-## Build & Release Workflow
+## Build & Test Workflow
 
-To publish a new release, run the single release script:
+After implementing a new feature (or set of features), build the app for testing:
 
 ```cmd
-release.bat
+npm run tauri build
 ```
 
-This script handles everything:
-1. Increments the patch version (e.g., 0.1.0 → 0.1.1)
-2. Builds and signs the installers
-3. Generates `latest.json` with the correct signature
-4. Commits and pushes to GitHub
-5. Creates a GitHub release with all artifacts
+Then launch `src-tauri\target\release\scytheops.exe` to verify changes in the built environment.
 
-To test locally before release, run:
-```cmd
-npm run release
-```
-Then launch `src-tauri\target\release\scytheops.exe` to verify changes.
+**Note:** Do not commit or push to the repository unless explicitly requested by the user.
 
 ## Project Structure
 
@@ -184,25 +175,6 @@ CREATE POLICY "Non-blocked users can view table_name"
 ## Auto-Updates
 
 The app checks for updates on launch and forces users to update (blocking modal) to ensure version concurrency.
-
-### Publishing a Release
-
-Run the single release script:
-```cmd
-release.bat
-```
-
-This handles everything automatically:
-1. Increments version number
-2. Builds and signs installers (NSIS + MSI)
-3. Generates `latest.json` with correct signature
-4. Commits and pushes to GitHub
-5. Creates GitHub release with all artifacts
-
-### Signing Key
-- Private key: embedded in `release.bat` (encrypted)
-- Public key: embedded in `tauri.conf.json`
-- Password: `scythe`
 
 ## Common Patterns
 

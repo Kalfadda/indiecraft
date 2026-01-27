@@ -246,7 +246,7 @@ export function LibraryDetailPanel() {
           overflow: 'hidden',
         }}>
           {isModel ? (
-            <div style={{ height: Math.min(panelWidth - 32, 320) }}>
+            <div style={{ width: '100%', height: Math.min(panelWidth - 32, 320) }}>
               <ModelPreview
                 filePath={selectedAsset.path}
                 extension={selectedAsset.extension}

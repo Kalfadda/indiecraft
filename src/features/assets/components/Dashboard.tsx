@@ -20,7 +20,8 @@ import { GoalsDashboard, InboxView, useInboxCount } from "@/features/goals";
 import { NotificationsView } from "@/features/notifications";
 import { BulletinView } from "@/features/bulletin";
 import { LibraryView } from "@/features/library";
-import { Box, LogOut, Clock, Wifi, Tag, X, ListTodo, Boxes, CircleCheck, CalendarDays, Wrench, ChevronDown, GitCompare, Cpu, Lightbulb, FileQuestion, PlayCircle, Target, Bell, ShieldAlert, Clipboard, Palette, Inbox, LayoutDashboard, Library } from "lucide-react";
+import { Box, LogOut, Clock, Wifi, Tag, X, ListTodo, Boxes, CircleCheck, CalendarDays, Wrench, ChevronDown, GitCompare, Cpu, Lightbulb, FileQuestion, PlayCircle, Target, Bell, ShieldAlert, Clipboard, Palette, Inbox, LayoutDashboard, Library, Settings } from "lucide-react";
+import { SettingsModal } from "@/features/settings";
 import { ASSET_CATEGORIES, type AssetCategory, type AssetStatus } from "@/types/database";
 
 type MainView = "goals" | "inbox" | "tasks" | "schedule" | "modelingrequests" | "compare" | "featurerequests" | "bulletin" | "notifications" | "library";
@@ -36,6 +37,7 @@ export function Dashboard() {
   const [mainView, setMainView] = useState<MainView>("goals");
   const { data: inboxCount = 0 } = useInboxCount();
   const [themePickerOpen, setThemePickerOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [appVersion, setAppVersion] = useState<string>("");
   const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "available" | "latest" | "error">("idle");
   const [newVersion, setNewVersion] = useState<string>("");
@@ -707,6 +709,31 @@ export function Dashboard() {
           </div>
 
           <button
+            onClick={() => setSettingsOpen(true)}
+            title="Settings"
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: 8,
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              border: 'none',
+              cursor: 'pointer',
+              color: theme.colors.sidebarText,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              transition: 'all 0.3s ease',
+              fontSize: 13,
+              marginBottom: 8,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Settings style={{ width: 16, height: 16 }} />
+              <span>Settings</span>
+            </div>
+          </button>
+
+          <button
             onClick={signOut}
             title="Sign Out"
             style={{
@@ -986,6 +1013,9 @@ export function Dashboard() {
           </main>
         )}
       </div>
+
+      {/* Settings Modal */}
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
       {/* Task navigation modal - shows when clicking a task from other views */}
       <AssetDetailModal
