@@ -75,6 +75,11 @@ Set up takes five minutes. The app walks you through it.
 
 ## Changelog
 
+### v0.2.1
+- **Goal Task Reordering** - Drag-and-drop to reorder tasks within goals
+- **Auto-Updates** - App checks for updates on launch and prompts users to update
+- **Branding Cleanup** - Release workflow uses IndieCraft name consistently
+
 ### v0.2.0
 - **Config Export/Import** - Share your Supabase connection as a `.json` file so teammates can skip manual setup
 - **Settings Modal** - New gear icon in the sidebar to view connection info and export config

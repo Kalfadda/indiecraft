@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Target, Plus, Trash2, CheckCircle2, AlertCircle, Edit2, Link2, MessageCircle, Send, PlusCircle, Calendar } from "lucide-react";
+import { X, Target, Plus, Trash2, CheckCircle2, AlertCircle, Edit2, Link2, MessageCircle, Send, PlusCircle, Calendar, GripVertical } from "lucide-react";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { GoalWithDetails } from "../hooks/useGoals";
 import { useGoalMutations } from "../hooks/useGoalMutations";
 import { useGoalDependencies, useTaskDependencyMutations } from "../hooks/useTaskDependencies";
@@ -38,7 +41,7 @@ export function GoalDetailModal({ goal, isOpen, onClose }: GoalDetailModalProps)
 
   const user = useAuthStore((state) => state.user);
   const setPendingTaskId = useNavigationStore((state) => state.setPendingTaskId);
-  const { updateGoal, deleteGoal, removeTaskFromGoal, addTaskToGoal } = useGoalMutations();
+  const { updateGoal, deleteGoal, removeTaskFromGoal, addTaskToGoal, reorderGoalTasks } = useGoalMutations();
   const { createAsset } = useAssetMutations();
   const { data: dependencies = [] } = useGoalDependencies(goal?.id);
   const { addDependency, removeDependencyById } = useTaskDependencyMutations();
@@ -49,6 +52,14 @@ export function GoalDetailModal({ goal, isOpen, onClose }: GoalDetailModalProps)
 
   // Get all tasks for adding to goal
   const { data: allTasks = [] } = useAssets();
+
+  // Drag and drop sensors (must be before any conditional returns)
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+    useSensor(KeyboardSensor)
+  );
 
   if (!goal) return null;
 
@@ -165,6 +176,23 @@ export function GoalDetailModal({ goal, isOpen, onClose }: GoalDetailModalProps)
   // Get dependencies for a specific task
   const getTaskDependencies = (taskId: string) => {
     return dependencies.filter(d => d.dependent_task_id === taskId);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = goal.tasks.findIndex(t => t.id === active.id);
+    const newIndex = goal.tasks.findIndex(t => t.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(goal.tasks, oldIndex, newIndex);
+    const taskOrders = reordered.map((task, index) => ({
+      assetId: task.id,
+      orderIndex: index,
+    }));
+
+    reorderGoalTasks.mutate({ goalId: goal.id, taskOrders });
   };
 
   return (
@@ -542,213 +570,36 @@ export function GoalDetailModal({ goal, isOpen, onClose }: GoalDetailModalProps)
                       No tasks yet. Add tasks to build your goal.
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {goal.tasks.map((task, index) => {
-                        const taskDeps = getTaskDependencies(task.id);
-                        const isCompleted = task.status === "completed";
-                        const category = task.category ? ASSET_CATEGORIES[task.category] : null;
-
-                        return (
-                          <div key={task.id}>
-                            <div
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 12,
-                                padding: 14,
-                                backgroundColor: isCompleted ? `${theme.colors.success}08` : theme.colors.inputBg,
-                                borderRadius: 10,
-                                border: `1px solid ${isCompleted ? `${theme.colors.success}30` : theme.colors.border}`,
-                                transition: 'all 0.3s ease',
-                              }}
-                            >
-                              {/* Step number */}
-                              <div style={{
-                                width: 28,
-                                height: 28,
-                                borderRadius: '50%',
-                                backgroundColor: isCompleted ? theme.colors.success : theme.colors.border,
-                                color: isCompleted ? '#fff' : theme.colors.textMuted,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: 12,
-                                fontWeight: 600,
-                                flexShrink: 0,
-                              }}>
-                                {isCompleted ? <CheckCircle2 style={{ width: 16, height: 16 }} /> : index + 1}
-                              </div>
-
-                              {/* Task info */}
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <button
-                                    onClick={() => handleNavigateToTask(task.id)}
-                                    style={{
-                                      fontSize: 14,
-                                      fontWeight: 500,
-                                      color: theme.colors.text,
-                                      background: 'none',
-                                      border: 'none',
-                                      padding: 0,
-                                      cursor: 'pointer',
-                                      textDecoration: 'none',
-                                      transition: 'all 0.15s ease',
-                                    }}
-                                    onMouseOver={(e) => e.currentTarget.style.color = theme.colors.primary}
-                                    onMouseOut={(e) => e.currentTarget.style.color = theme.colors.text}
-                                  >
-                                    {task.name}
-                                  </button>
-                                  {category && (
-                                    <span style={{
-                                      padding: '2px 8px',
-                                      borderRadius: 999,
-                                      fontSize: 10,
-                                      fontWeight: 500,
-                                      backgroundColor: `${category.color}20`,
-                                      color: category.color,
-                                    }}>
-                                      {category.label}
-                                    </span>
-                                  )}
-                                  <span style={{
-                                    padding: '2px 8px',
-                                    borderRadius: 999,
-                                    fontSize: 10,
-                                    fontWeight: 500,
-                                    backgroundColor: isCompleted ? `${theme.colors.success}15` : theme.colors.backgroundSecondary,
-                                    color: isCompleted ? theme.colors.success : theme.colors.textMuted,
-                                  }}>
-                                    {task.status}
-                                  </span>
-                                </div>
-                                {taskDeps.length > 0 && (
-                                  <div style={{
-                                    fontSize: 11,
-                                    color: theme.colors.textMuted,
-                                    marginTop: 4,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 4,
-                                  }}>
-                                    <AlertCircle style={{ width: 12, height: 12 }} />
-                                    Depends on: {taskDeps.map(d => d.dependency_task?.name).join(', ')}
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Actions */}
-                              {goal.status === "active" && (
-                                <div style={{ display: 'flex', gap: 4 }}>
-                                  <button
-                                    onClick={() => setShowAddDependency(task.id)}
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      width: 28,
-                                      height: 28,
-                                      borderRadius: 6,
-                                      border: 'none',
-                                      backgroundColor: 'transparent',
-                                      color: theme.colors.textMuted,
-                                      cursor: 'pointer',
-                                    }}
-                                    title="Add dependency"
-                                  >
-                                    <Link2 style={{ width: 14, height: 14 }} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleRemoveTask(task.id)}
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      width: 28,
-                                      height: 28,
-                                      borderRadius: 6,
-                                      border: 'none',
-                                      backgroundColor: 'transparent',
-                                      color: theme.colors.textMuted,
-                                      cursor: 'pointer',
-                                    }}
-                                    title="Remove from goal"
-                                  >
-                                    <Trash2 style={{ width: 14, height: 14 }} />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Dependency selector dropdown */}
-                            {showAddDependency === task.id && (
-                              <div style={{
-                                marginTop: 8,
-                                padding: 12,
-                                backgroundColor: theme.colors.card,
-                                border: `1px solid ${theme.colors.border}`,
-                                borderRadius: 8,
-                              }}>
-                                <p style={{ fontSize: 12, color: theme.colors.textMuted, margin: '0 0 8px 0' }}>
-                                  Select a task this depends on:
-                                </p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                  {goal.tasks
-                                    .filter(t => t.id !== task.id && !taskDeps.some(d => d.dependency_task_id === t.id))
-                                    .map(t => (
-                                      <button
-                                        key={t.id}
-                                        onClick={() => handleAddDependency(task.id, t.id)}
-                                        style={{
-                                          padding: '8px 12px',
-                                          fontSize: 13,
-                                          textAlign: 'left',
-                                          backgroundColor: theme.colors.inputBg,
-                                          border: `1px solid ${theme.colors.border}`,
-                                          borderRadius: 6,
-                                          cursor: 'pointer',
-                                          color: theme.colors.text,
-                                        }}
-                                      >
-                                        {t.name}
-                                      </button>
-                                    ))}
-                                  <button
-                                    onClick={() => setShowAddDependency(null)}
-                                    style={{
-                                      padding: '8px 12px',
-                                      fontSize: 13,
-                                      color: theme.colors.textMuted,
-                                      backgroundColor: 'transparent',
-                                      border: 'none',
-                                      cursor: 'pointer',
-                                    }}
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Connector line */}
-                            {index < goal.tasks.length - 1 && (
-                              <div style={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                padding: '4px 0',
-                              }}>
-                                <div style={{
-                                  width: 2,
-                                  height: 16,
-                                  backgroundColor: theme.colors.border,
-                                }} />
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext
+                        items={goal.tasks.map(t => t.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {goal.tasks.map((task, index) => (
+                            <SortableTaskItem
+                              key={task.id}
+                              task={task}
+                              index={index}
+                              isLast={index === goal.tasks.length - 1}
+                              goalActive={goal.status === "active"}
+                              taskDeps={getTaskDependencies(task.id)}
+                              showAddDependency={showAddDependency}
+                              goalTasks={goal.tasks}
+                              theme={theme}
+                              onNavigate={handleNavigateToTask}
+                              onRemove={handleRemoveTask}
+                              onAddDependencyClick={setShowAddDependency}
+                              onAddDependency={handleAddDependency}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
                   )}
 
                   {/* Add task dropdown */}
@@ -1267,6 +1118,280 @@ export function GoalDetailModal({ goal, isOpen, onClose }: GoalDetailModalProps)
         </>
       )}
     </AnimatePresence>
+  );
+}
+
+// Sortable task item for drag-and-drop reordering
+interface SortableTaskItemProps {
+  task: GoalWithDetails["tasks"][number];
+  index: number;
+  isLast: boolean;
+  goalActive: boolean;
+  taskDeps: ReturnType<typeof Array.prototype.filter>;
+  showAddDependency: string | null;
+  goalTasks: GoalWithDetails["tasks"];
+  theme: ReturnType<typeof useTheme>;
+  onNavigate: (taskId: string) => void;
+  onRemove: (taskId: string) => void;
+  onAddDependencyClick: (taskId: string | null) => void;
+  onAddDependency: (dependentTaskId: string, dependencyTaskId: string) => void;
+}
+
+function SortableTaskItem({
+  task,
+  index,
+  isLast,
+  goalActive,
+  taskDeps,
+  showAddDependency,
+  goalTasks,
+  theme,
+  onNavigate,
+  onRemove,
+  onAddDependencyClick,
+  onAddDependency,
+}: SortableTaskItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 'auto' as const,
+  };
+
+  const isCompleted = task.status === "completed";
+  const category = task.category ? ASSET_CATEGORIES[task.category] : null;
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: 14,
+          backgroundColor: isDragging
+            ? theme.colors.backgroundSecondary
+            : isCompleted ? `${theme.colors.success}08` : theme.colors.inputBg,
+          borderRadius: 10,
+          border: `1px solid ${isDragging ? theme.colors.primary : isCompleted ? `${theme.colors.success}30` : theme.colors.border}`,
+          transition: isDragging ? 'none' : 'all 0.3s ease',
+        }}
+      >
+        {/* Drag handle */}
+        {goalActive && (
+          <div
+            {...attributes}
+            {...listeners}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: isDragging ? 'grabbing' : 'grab',
+              color: theme.colors.textMuted,
+              flexShrink: 0,
+              padding: 2,
+              borderRadius: 4,
+              touchAction: 'none',
+            }}
+            title="Drag to reorder"
+          >
+            <GripVertical style={{ width: 16, height: 16 }} />
+          </div>
+        )}
+
+        {/* Step number */}
+        <div style={{
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          backgroundColor: isCompleted ? theme.colors.success : theme.colors.border,
+          color: isCompleted ? '#fff' : theme.colors.textMuted,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 12,
+          fontWeight: 600,
+          flexShrink: 0,
+        }}>
+          {isCompleted ? <CheckCircle2 style={{ width: 16, height: 16 }} /> : index + 1}
+        </div>
+
+        {/* Task info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={() => onNavigate(task.id)}
+              style={{
+                fontSize: 14,
+                fontWeight: 500,
+                color: theme.colors.text,
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                textDecoration: 'none',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseOver={(e) => e.currentTarget.style.color = theme.colors.primary}
+              onMouseOut={(e) => e.currentTarget.style.color = theme.colors.text}
+            >
+              {task.name}
+            </button>
+            {category && (
+              <span style={{
+                padding: '2px 8px',
+                borderRadius: 999,
+                fontSize: 10,
+                fontWeight: 500,
+                backgroundColor: `${category.color}20`,
+                color: category.color,
+              }}>
+                {category.label}
+              </span>
+            )}
+            <span style={{
+              padding: '2px 8px',
+              borderRadius: 999,
+              fontSize: 10,
+              fontWeight: 500,
+              backgroundColor: isCompleted ? `${theme.colors.success}15` : theme.colors.backgroundSecondary,
+              color: isCompleted ? theme.colors.success : theme.colors.textMuted,
+            }}>
+              {task.status}
+            </span>
+          </div>
+          {taskDeps.length > 0 && (
+            <div style={{
+              fontSize: 11,
+              color: theme.colors.textMuted,
+              marginTop: 4,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}>
+              <AlertCircle style={{ width: 12, height: 12 }} />
+              Depends on: {taskDeps.map((d: any) => d.dependency_task?.name).join(', ')}
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        {goalActive && (
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button
+              onClick={() => onAddDependencyClick(task.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 28,
+                height: 28,
+                borderRadius: 6,
+                border: 'none',
+                backgroundColor: 'transparent',
+                color: theme.colors.textMuted,
+                cursor: 'pointer',
+              }}
+              title="Add dependency"
+            >
+              <Link2 style={{ width: 14, height: 14 }} />
+            </button>
+            <button
+              onClick={() => onRemove(task.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 28,
+                height: 28,
+                borderRadius: 6,
+                border: 'none',
+                backgroundColor: 'transparent',
+                color: theme.colors.textMuted,
+                cursor: 'pointer',
+              }}
+              title="Remove from goal"
+            >
+              <Trash2 style={{ width: 14, height: 14 }} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Dependency selector dropdown */}
+      {showAddDependency === task.id && (
+        <div style={{
+          marginTop: 8,
+          padding: 12,
+          backgroundColor: theme.colors.card,
+          border: `1px solid ${theme.colors.border}`,
+          borderRadius: 8,
+        }}>
+          <p style={{ fontSize: 12, color: theme.colors.textMuted, margin: '0 0 8px 0' }}>
+            Select a task this depends on:
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {goalTasks
+              .filter(t => t.id !== task.id && !taskDeps.some((d: any) => d.dependency_task_id === t.id))
+              .map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => onAddDependency(task.id, t.id)}
+                  style={{
+                    padding: '8px 12px',
+                    fontSize: 13,
+                    textAlign: 'left',
+                    backgroundColor: theme.colors.inputBg,
+                    border: `1px solid ${theme.colors.border}`,
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    color: theme.colors.text,
+                  }}
+                >
+                  {t.name}
+                </button>
+              ))}
+            <button
+              onClick={() => onAddDependencyClick(null)}
+              style={{
+                padding: '8px 12px',
+                fontSize: 13,
+                color: theme.colors.textMuted,
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Connector line */}
+      {!isLast && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          padding: '4px 0',
+        }}>
+          <div style={{
+            width: 2,
+            height: 16,
+            backgroundColor: theme.colors.border,
+          }} />
+        </div>
+      )}
+    </div>
   );
 }
 

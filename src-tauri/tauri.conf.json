@@ -41,7 +41,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "createUpdaterArtifacts": false,
+    "createUpdaterArtifacts": true,
     "resources": ["resources/*"],
     "windows": {
       "nsis": {
@@ -50,5 +50,12 @@
     }
   },
   "mainBinaryName": "indiecraft",
-  "plugins": {}
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRBM0QzREM2ODhDNTVDQjMKUldTelhNV0l4ajA5U2tyTWRFNkdPOTB0Yk5tRFU1ODNpbTRKS0o0MjlTa2dWLzI3U3hOQ2RCcm4K",
+      "endpoints": [
+        "https://github.com/Kalfadda/indiecraft/releases/latest/download/latest.json"
+      ]
+    }
+  }
 }
